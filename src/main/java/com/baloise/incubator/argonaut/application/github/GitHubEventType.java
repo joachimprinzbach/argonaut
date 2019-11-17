@@ -2,8 +2,9 @@ package com.baloise.incubator.argonaut.application.github;
 
 public enum GitHubEventType {
 
-    PullRequestEvent("pull_request"),
-    PushEvent("push");
+    PULL_REQUEST("pull_request"),
+    ISSUE_COMMENT("issue_comment"),
+    PUSH("push");
 
     private String eventName;
 

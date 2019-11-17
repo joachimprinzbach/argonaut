@@ -23,10 +23,10 @@ public class GitHubWebhookRestController {
             JsonObject jsonObject = new JsonParser().parse(data).getAsJsonObject();
             System.out.println(LocalDateTime.now() + " " + jsonObject.get("action"));
             switch (gitHubEventType) {
-                case PullRequestEvent: {
+                case PULL_REQUEST: {
 
                 }
-                case PushEvent: {
+                case PUSH: {
 
                 }
                 default: {
