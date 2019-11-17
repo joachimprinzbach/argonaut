@@ -3,14 +3,14 @@ package com.baloise.incubator.argonaut.application.github;
 import java.util.Arrays;
 import java.util.Optional;
 
-public enum GitHubPullRequestEventAction {
+public enum GitHubIssueCommentEventAction {
 
-    OPENED("opened"),
-    CLOSED("closed");
+    CREATED("created"),
+    EDITED("edited");
 
     private String action;
 
-    GitHubPullRequestEventAction(String action) {
+    GitHubIssueCommentEventAction(String action) {
         this.action = action;
     }
 
@@ -18,7 +18,7 @@ public enum GitHubPullRequestEventAction {
         return action;
     }
 
-    public static Optional<GitHubPullRequestEventAction> fromActionName(String actionName) {
+    public static Optional<GitHubIssueCommentEventAction> fromActionName(String actionName) {
         return Arrays.stream(values())
                 .filter(val -> val.getAction().equals(actionName))
                 .findFirst();

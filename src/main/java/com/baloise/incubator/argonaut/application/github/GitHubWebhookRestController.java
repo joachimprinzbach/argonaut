@@ -9,33 +9,79 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 @RestController
 public class GitHubWebhookRestController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GitHubWebhookRestController.class);
+    private static final String GITHUB_EVENT_HEADER_KEY = "X-GitHub-Event";
 
     @PostMapping(path = "webhook/github")
-    public void handleGitHubWebhookEvent(@RequestBody String data, @RequestHeader("X-GitHub-Event") String githubEvent) {
+    public void handleGitHubWebhookEvent(@RequestBody String data, @RequestHeader(GITHUB_EVENT_HEADER_KEY) String githubEvent) {
         Optional<GitHubEventType> gitHubEventType = GitHubEventType.fromEventName(githubEvent);
         if (gitHubEventType.isPresent()) {
             JsonObject jsonObject = new JsonParser().parse(data).getAsJsonObject();
-            System.out.println(LocalDateTime.now() + " " + jsonObject.get("action"));
             switch (gitHubEventType.get()) {
                 case PULL_REQUEST: {
-
+                    handlePullRequestEvent(jsonObject);
                 }
                 case PUSH: {
-
+                    handlePushEvent(jsonObject);
+                }
+                case ISSUE_COMMENT: {
+                    handleIssueCommentEvent(jsonObject);
                 }
                 default: {
-                    LOGGER.info("Unhandled GitHub Event Type: {}", githubEvent);
+                    LOGGER.warn("Unhandled GitHub Event Type: {}", gitHubEventType.get());
                 }
             }
         } else {
-            LOGGER.info("Unhandled GitHub Event Type: {}", githubEvent);
+            LOGGER.info("Ignored GitHub Event Type: {}", githubEvent);
         }
+    }
+
+    private void handlePullRequestEvent(JsonObject jsonObject) {
+        String action = getActionElementValue(jsonObject);
+        Optional<GitHubPullRequestEventAction> gitHubPullRequestEventAction = GitHubPullRequestEventAction.fromActionName(action);
+        if (gitHubPullRequestEventAction.isPresent()) {
+            switch (gitHubPullRequestEventAction.get()) {
+                case CLOSED: {
+                    System.out.println("PR CLOSED");
+                }
+                case OPENED: {
+                    System.out.println("PR OPENED");
+                }
+                default: {
+                    LOGGER.info("Unhandled GitHub Pull Request Event Action: {}", gitHubPullRequestEventAction.get());
+                }
+            }
+        }
+    }
+
+    private void handlePushEvent(JsonObject jsonObject) {
+        LOGGER.info("Received a push event");
+    }
+
+    private void handleIssueCommentEvent(JsonObject jsonObject) {
+        String action = getActionElementValue(jsonObject);
+        Optional<GitHubIssueCommentEventAction> gitHubIssueCommentEventAction = GitHubIssueCommentEventAction.fromActionName(action);
+        if (gitHubIssueCommentEventAction.isPresent()) {
+            switch (gitHubIssueCommentEventAction.get()) {
+                case CREATED: {
+                    System.out.println("Issue comment created");
+                }
+                case EDITED: {
+                    System.out.println("Issue comment edited");
+                }
+                default: {
+                    LOGGER.info("Unhandled GitHub Issue Comment Event Action: {}", gitHubIssueCommentEventAction.get());
+                }
+            }
+        }
+    }
+
+    private String getActionElementValue(JsonObject jsonObject) {
+        return jsonObject.get("action").getAsString();
     }
 }
