@@ -1,5 +1,8 @@
 package com.baloise.incubator.argonaut.application.github;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 public enum GitHubEventType {
 
     PULL_REQUEST("pull_request"),
@@ -14,5 +17,11 @@ public enum GitHubEventType {
 
     public String getEventName() {
         return eventName;
+    }
+
+    public static Optional<GitHubEventType> fromEventName(String eventName) {
+        return Arrays.stream(values())
+                .filter(val -> val.getEventName().equals(eventName))
+                .findFirst();
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @RestController
 public class GitHubWebhookRestController {
@@ -18,11 +19,11 @@ public class GitHubWebhookRestController {
 
     @PostMapping(path = "webhook/github")
     public void handleGitHubWebhookEvent(@RequestBody String data, @RequestHeader("X-GitHub-Event") String githubEvent) {
-        try {
-            GitHubEventType gitHubEventType = GitHubEventType.valueOf(githubEvent);
+        Optional<GitHubEventType> gitHubEventType = GitHubEventType.fromEventName(githubEvent);
+        if (gitHubEventType.isPresent()) {
             JsonObject jsonObject = new JsonParser().parse(data).getAsJsonObject();
             System.out.println(LocalDateTime.now() + " " + jsonObject.get("action"));
-            switch (gitHubEventType) {
+            switch (gitHubEventType.get()) {
                 case PULL_REQUEST: {
 
                 }
@@ -30,12 +31,11 @@ public class GitHubWebhookRestController {
 
                 }
                 default: {
-                    System.out.println("Unhandle GitHub Event Type: " + githubEvent);
+                    LOGGER.info("Unhandled GitHub Event Type: {}", githubEvent);
                 }
             }
-        } catch (IllegalArgumentException e) {
-            LOGGER.info("Unhandled GitHub Event Type: " + githubEvent);
+        } else {
+            LOGGER.info("Unhandled GitHub Event Type: {}", githubEvent);
         }
-
     }
 }
