@@ -1,0 +1,34 @@
+language: java
+jdk:
+  - openjdk8
+services:
+  - docker
+matrix:
+  fast_finish: true
+
+env:
+  global:
+    # DOCKER_USER
+    - secure: "CSGFK5aUEWE6g/jSUlqbCSjrYl92Aba9Apmpp47XPSt5+m5sa0/RjnbXO73Za/dElonnrFZc0F6yEo8iqFjjxPz9ZgZD2YHfFWTLubIOvgV2wnN55I6kBUWNT1bqejerrogMSS4x266mufljSaWNWb9Equ4yPP7SlGHH7dpkM9brnNrFxgCK/iwaIECKTCNnxRFKVBHkgdoMtC6D+FOT4VvNKvc6poMdASIC2tPWhDQebmOkGR+rxPLAx8/g3Ck9bauJJ3CMLdTCIKvv8IetzCjwDDk3WwS/hEl0AYdJdLUH+aaTWKX8fgDaXhP9kRh9g24kBi7qWyfuFHFHeiJlqLKuNnVKJiV+GrWUfwfLA6AQG7qHU9Oo+NLmyXgnImgC8r67EuoYMnmSqfFg33Ay33943Qyy3K+6FlrFKpsmvF+aJQwelPsGq+A87ORff5+1+t3Rx3NZDwsRIwtjGxppZhuLrq0KuMvwMC/jYd4mvPEX9/XG4ni76MynrbIYKuzjpFyUwa0nrZw4ln6ReJ3kKkHu4DuFqiuF9RtsfEX7WOGUkYpUjPE9mnRPqfW7TKR5ICmg245X/h0RS7aoqnz8Yy1ZMjFqbhuqj3Fjv2lGxZ11H0KWmb1lxuUSnLKxK2xZsFimERAYO8QVRT6giPfojMiprm4KGT3yDMHiJMUs1JI="
+    # DOCKER_PASSWORD
+    - secure: "bxB0g9fYgkYf8MlqAnIyHO4FO9RFNgr4L+EkMxP5Ss1xq2DGuJPa23O0cEFvIT4zAjlysgsxMJqT7kBxa0fs5xUfP5wnNBXekcBC2XZ7/rWW+v0SbWGagpyxBHX8g3b95PleWZph9XVthbZjhknh3hteR2G/asgHZEutMATbCwtO8oeVgK98veS+hwKx13f3n0a5y8khKTU4cRSrhF4FGKxg+Td6IZUEfH18+wIwr5dCgb+M1l+LN9V2bjKlgmOz/xOjz2GOjafxT5y/cNq189XgyUrROpcHhoanZSU1yNKogwHJ9JrxVZjTEyzeKKVD8MdRYGIIaGbI8U72jbDvdHSMvHVB8FkqcFg81qO7dynFrwo0CPGySG75sq3ak269fBFpvHAwJcXB1R2lw8wWk1n+x+7hNl6rtxz1vIgLrqIFZbmQ6p+0GNath95y5uY2xaqpDpF7hQwJVvXPwhfeA0XbhzM4EdNy01Z0fSsbBIs94Cm7YY7gsJcic2wJxE2jRYBql2Qfjx9dDcB2mQekh/9JZz5RY8XWVVdI1jjWQSEzVBgy64oxKmKWB302Ta6gkmg1H9yNZmlgjgydbmEHzGwf6IexEnUC8qa2/AW11s3OO7hqOf1IyFvMBSCEOWdDqKkXxTEvDUR+8Ywgy/fgP2GjmVwiWY5K3kyu92chHaE="
+    - IMAGE_NAME=baloiseincubator/argonaut
+
+before_install:
+  - chmod +x mvnw
+
+script:
+  - ./mvnw clean install -B
+  - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
+  - export TAG=$(if [ ! -z "$TRAVIS_TAG" ]; then echo "$TRAVIS_TAG"; else echo "$BRANCH-$COMMIT"; fi | sed 's/\//-/')
+  - docker build . -t $IMAGE_NAME:latest
+  - if [ $BRANCH = "master" ]; then docker tag $IMAGE_NAME:latest $IMAGE_NAME:master; fi
+  - docker tag $IMAGE_NAME:latest $IMAGE_NAME:$TAG
+  - docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+  - docker push $IMAGE_NAME:latest
+  - if [ $BRANCH = "master" ]; then docker push $IMAGE_NAME:master; fi
+  - docker push $IMAGE_NAME:$TAG
+
+cache:
+  directories:
+    - '$HOME/.m2/repository'
