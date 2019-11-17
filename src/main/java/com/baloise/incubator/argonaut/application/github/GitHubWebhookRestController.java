@@ -25,12 +25,15 @@ public class GitHubWebhookRestController {
             switch (gitHubEventType.get()) {
                 case PULL_REQUEST: {
                     handlePullRequestEvent(jsonObject);
+                    break;
                 }
                 case PUSH: {
                     handlePushEvent(jsonObject);
+                    break;
                 }
                 case ISSUE_COMMENT: {
                     handleIssueCommentEvent(jsonObject);
+                    break;
                 }
                 default: {
                     LOGGER.warn("Unhandled GitHub Event Type: {}", gitHubEventType.get());
@@ -48,9 +51,11 @@ public class GitHubWebhookRestController {
             switch (gitHubPullRequestEventAction.get()) {
                 case CLOSED: {
                     System.out.println("PR CLOSED");
+                    break;
                 }
                 case OPENED: {
                     System.out.println("PR OPENED");
+                    break;
                 }
                 default: {
                     LOGGER.info("Unhandled GitHub Pull Request Event Action: {}", gitHubPullRequestEventAction.get());
@@ -70,9 +75,11 @@ public class GitHubWebhookRestController {
             switch (gitHubIssueCommentEventAction.get()) {
                 case CREATED: {
                     System.out.println("Issue comment created");
+                    break;
                 }
                 case EDITED: {
                     System.out.println("Issue comment edited");
+                    break;
                 }
                 default: {
                     LOGGER.info("Unhandled GitHub Issue Comment Event Action: {}", gitHubIssueCommentEventAction.get());
