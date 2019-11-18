@@ -1,5 +1,7 @@
 package com.baloise.incubator.argonaut.application.github;
 
+import com.baloise.incubator.argonaut.domain.PullRequest;
+import com.baloise.incubator.argonaut.domain.PullRequestComment;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.slf4j.Logger;
@@ -75,6 +77,10 @@ public class GitHubWebhookRestController {
             switch (gitHubIssueCommentEventAction.get()) {
                 case CREATED: {
                     System.out.println("Issue comment created");
+                    String asString = jsonObject.get("comment").getAsJsonObject().get("body").getAsString();
+                    if (asString.startsWith("/ping")) {
+                        new PullRequest().comment(new PullRequestComment("pong!"));
+                    }
                     break;
                 }
                 case EDITED: {
