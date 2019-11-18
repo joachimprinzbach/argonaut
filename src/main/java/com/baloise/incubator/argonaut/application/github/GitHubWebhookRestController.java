@@ -1,11 +1,12 @@
 package com.baloise.incubator.argonaut.application.github;
 
-import com.baloise.incubator.argonaut.domain.PullRequest;
 import com.baloise.incubator.argonaut.domain.PullRequestComment;
+import com.baloise.incubator.argonaut.domain.PullRequestCommentService;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -18,6 +19,9 @@ public class GitHubWebhookRestController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GitHubWebhookRestController.class);
     private static final String GITHUB_EVENT_HEADER_KEY = "X-GitHub-Event";
+
+    @Autowired
+    private PullRequestCommentService commentService;
 
     @PostMapping(path = "webhook/github")
     public void handleGitHubWebhookEvent(@RequestBody String data, @RequestHeader(GITHUB_EVENT_HEADER_KEY) String githubEvent) {
@@ -79,7 +83,7 @@ public class GitHubWebhookRestController {
                     System.out.println("Issue comment created");
                     String asString = jsonObject.get("comment").getAsJsonObject().get("body").getAsString();
                     if (asString.startsWith("/ping")) {
-                        new PullRequest().comment(new PullRequestComment("pong!"));
+                        commentService.createPullRequestComment(new PullRequestComment("pong!"));
                     }
                     break;
                 }
