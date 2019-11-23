@@ -1,5 +1,6 @@
 package com.baloise.incubator.argonaut.application.github;
 
+import com.baloise.incubator.argonaut.domain.DeployPullRequestService;
 import com.baloise.incubator.argonaut.domain.PullRequestComment;
 import com.baloise.incubator.argonaut.domain.PullRequestCommentService;
 import com.google.gson.JsonObject;
@@ -21,7 +22,10 @@ public class GitHubWebhookRestController {
     private static final String GITHUB_EVENT_HEADER_KEY = "X-GitHub-Event";
 
     @Autowired
-    private PullRequestCommentService commentService;
+    private PullRequestCommentService pullRequestCommentService;
+
+    @Autowired
+    private DeployPullRequestService deployPullRequestService;
 
     @PostMapping(path = "webhook/github")
     public void handleGitHubWebhookEvent(@RequestBody String data, @RequestHeader(GITHUB_EVENT_HEADER_KEY) String githubEvent) {
@@ -80,11 +84,21 @@ public class GitHubWebhookRestController {
         if (gitHubIssueCommentEventAction.isPresent()) {
             switch (gitHubIssueCommentEventAction.get()) {
                 case CREATED: {
-                    System.out.println("Issue comment created");
-                    String commentText = jsonObject.get("comment").getAsJsonObject().get("body").getAsString();
-                    String repoUrl = jsonObject.get("issue").getAsJsonObject().get("repository_url").getAsString();
+                    JsonObject comment = jsonObject.get("comment").getAsJsonObject();
+                    String commentText = comment.get("body").getAsString();
+                    String commentApiUrl = comment.get("issue_url").getAsString();
                     if (commentText.startsWith("/ping")) {
-                        commentService.createPullRequestComment(new PullRequestComment("pong!"), repoUrl + "-deployment-configuration");
+                        pullRequestCommentService.createPullRequestComment(new PullRequestComment("pong!"), commentApiUrl);
+                    } else {
+                        String deployText = "/deploy ";
+                        if (commentText.startsWith(deployText)) {
+                            String repoUrl = jsonObject.get("issue").getAsJsonObject().get("repository_url").getAsString();
+                            JsonObject repository = jsonObject.get("repository").getAsJsonObject();
+                            String repoName = repository.get("name").getAsString();
+                            String repoFullName = repository.get("full_name").getAsString();
+                            String tag = commentText.substring(commentText.indexOf(deployText) + deployText.length());
+                            deployPullRequestService.deploy(repoUrl + "-deployment-configuration", repoFullName, repoName, tag, commentApiUrl);
+                        }
                     }
                     break;
                 }

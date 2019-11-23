@@ -1,6 +1,6 @@
 package com.baloise.incubator.argonaut;
 
-import com.baloise.incubator.argonaut.domain.PullRequestComment;
+import com.baloise.incubator.argonaut.domain.DeployPullRequestService;
 import com.baloise.incubator.argonaut.domain.PullRequestCommentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -15,13 +15,18 @@ public class ArgonautApplication {
     @Autowired
     private PullRequestCommentService commentService;
 
+    @Autowired
+    private DeployPullRequestService deployPullRequestService;
+
+
     public static void main(String[] args) {
         SpringApplication.run(ArgonautApplication.class, args);
     }
 
-    @Scheduled(fixedDelay = 100000)
+    @Scheduled(fixedDelay = 10000000)
     public void bla() {
-        commentService.createPullRequestComment(new PullRequestComment("blabb"), "https://github.com/baloise-incubator/argonaut-deployment-configuration");
+        deployPullRequestService.deploy("https://github.com/baloise-incubator/argonaut-deployment-configuration", "baloise-incubator/argonaut", "argonaut", "latest", "https://api.github.com/repos/baloise-incubator/argonaut/issues/1");
+        //commentService.createPullRequestComment(new PullRequestComment("blabb"), "https://api.github.com/repos/baloise-incubator/argonaut/issues/1");
     }
 
 }
