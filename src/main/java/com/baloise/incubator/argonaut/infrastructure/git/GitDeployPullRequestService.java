@@ -2,6 +2,8 @@ package com.baloise.incubator.argonaut.infrastructure.git;
 
 import com.baloise.incubator.argonaut.domain.DeployPullRequestService;
 import com.baloise.incubator.argonaut.domain.PRCommentBranchNameService;
+import com.baloise.incubator.argonaut.domain.PullRequestComment;
+import com.baloise.incubator.argonaut.domain.PullRequestCommentService;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -32,6 +34,9 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
 
     @Autowired
     private PRCommentBranchNameService prCommentBranchNameService;
+
+    @Autowired
+    private PullRequestCommentService pullRequestCommentService;
 
     @Override
     public void deploy(String url, String fullName, String applicationName, String newImageTag, String commentApiUrl) {
@@ -85,6 +90,7 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
                     .setCredentialsProvider(new UsernamePasswordCredentialsProvider("ttt-travis-bot", apiToken))
                     .call();
             LOGGER.info("Pushed changes.");
+            pullRequestCommentService.createPullRequestComment(new PullRequestComment("Successfully deployed version "+ newImageTag), commentApiUrl);
         } catch (
                 GitAPIException | InvalidConfigurationException | IOException e) {
             e.printStackTrace();

@@ -92,9 +92,9 @@ public class GitHubWebhookRestController {
                     } else {
                         String deployText = "/deploy ";
                         if (commentText.startsWith(deployText)) {
-                            String repoUrl = jsonObject.get("issue").getAsJsonObject().get("repository_url").getAsString();
                             JsonObject repository = jsonObject.get("repository").getAsJsonObject();
                             String repoName = repository.get("name").getAsString();
+                            String repoUrl = repository.get("clone_url").getAsString();
                             String repoFullName = repository.get("full_name").getAsString();
                             String tag = commentText.substring(commentText.indexOf(deployText) + deployText.length());
                             deployPullRequestService.deploy(repoUrl + "-deployment-configuration", repoFullName, repoName, tag, commentApiUrl);
