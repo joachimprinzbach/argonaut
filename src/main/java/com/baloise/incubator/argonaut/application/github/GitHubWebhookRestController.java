@@ -81,9 +81,10 @@ public class GitHubWebhookRestController {
             switch (gitHubIssueCommentEventAction.get()) {
                 case CREATED: {
                     System.out.println("Issue comment created");
-                    String asString = jsonObject.get("comment").getAsJsonObject().get("body").getAsString();
-                    if (asString.startsWith("/ping")) {
-                        commentService.createPullRequestComment(new PullRequestComment("pong!"));
+                    String commentText = jsonObject.get("comment").getAsJsonObject().get("body").getAsString();
+                    String repoUrl = jsonObject.get("issue").getAsJsonObject().get("repository_url").getAsString();
+                    if (commentText.startsWith("/ping")) {
+                        commentService.createPullRequestComment(new PullRequestComment("pong!"), repoUrl + "-deployment-configuration");
                     }
                     break;
                 }

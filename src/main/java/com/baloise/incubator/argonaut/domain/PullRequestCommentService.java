@@ -2,5 +2,5 @@ package com.baloise.incubator.argonaut.domain;
 
 public interface PullRequestCommentService {
 
-    void createPullRequestComment(PullRequestComment pullRequestComment);
+    void createPullRequestComment(PullRequestComment pullRequestComment, String url);
 }
