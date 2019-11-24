@@ -6,6 +6,7 @@ import com.baloise.incubator.argonaut.domain.PullRequestComment;
 import com.baloise.incubator.argonaut.domain.PullRequestCommentService;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.simpleyaml.configuration.file.YamlFile;
@@ -60,13 +61,16 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
             if (!"master".equals(sanitizedBranchName)) {
                 branchSpecificFolderName += "-" + sanitizedBranchName;
                 branchSpecificFolder = new File(uuidWorkingDir, branchSpecificFolderName);
-                FileUtils.copyDirectory(masterFolder, branchSpecificFolder);
+                if (!branchSpecificFolder.exists() || branchSpecificFolderName.isEmpty()) {
+                    FileUtils.copyDirectory(masterFolder, branchSpecificFolder);
+                    LOGGER.info("PR Deployment {} does not exist, copying directory content from master directory: {}", branchSpecificFolder.getName(), masterFolder.getName());
+                }
             }
             for (File subTempFolderFile : branchSpecificFolder.listFiles()) {
                 if ("values.yaml".equals(subTempFolderFile.getName())) {
                     YamlFile yamlFile = new YamlFile(subTempFolderFile);
                     yamlFile.load();
-                    LOGGER.info("New image tag: {}", yamlFile.get("backend.image.tag"));
+                    LOGGER.info("Replacing old image tag: {} - with new tag: {}", yamlFile.get("backend.image.tag"), newImageTag);
                     yamlFile.set("backend.image.tag", newImageTag);
                     yamlFile.save();
                 }
@@ -83,6 +87,7 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
                     .call();
             git
                     .commit()
+                    .setAuthor("ttt-travis-bot", "joachim.prinzbach+github-ttt-travis-bot@gmail.com")
                     .setMessage("Redeploy")
                     .call();
             git
@@ -90,7 +95,7 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
                     .setCredentialsProvider(new UsernamePasswordCredentialsProvider("ttt-travis-bot", apiToken))
                     .call();
             LOGGER.info("Pushed changes.");
-            pullRequestCommentService.createPullRequestComment(new PullRequestComment("Successfully deployed version "+ newImageTag), commentApiUrl);
+            pullRequestCommentService.createPullRequestComment(new PullRequestComment("Successfully deployed version " + newImageTag), commentApiUrl);
         } catch (
                 GitAPIException | InvalidConfigurationException | IOException e) {
             e.printStackTrace();

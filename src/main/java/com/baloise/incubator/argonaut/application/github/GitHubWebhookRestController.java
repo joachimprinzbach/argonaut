@@ -32,6 +32,7 @@ public class GitHubWebhookRestController {
         Optional<GitHubEventType> gitHubEventType = GitHubEventType.fromEventName(githubEvent);
         if (gitHubEventType.isPresent()) {
             JsonObject jsonObject = new JsonParser().parse(data).getAsJsonObject();
+            LOGGER.info("Received Event of type {}", gitHubEventType.get());
             switch (gitHubEventType.get()) {
                 case PULL_REQUEST: {
                     handlePullRequestEvent(jsonObject);
@@ -60,11 +61,11 @@ public class GitHubWebhookRestController {
         if (gitHubPullRequestEventAction.isPresent()) {
             switch (gitHubPullRequestEventAction.get()) {
                 case CLOSED: {
-                    System.out.println("PR CLOSED");
+                    LOGGER.info("PR CLOSED Event");
                     break;
                 }
                 case OPENED: {
-                    System.out.println("PR OPENED");
+                    LOGGER.info("PR OPENED Event");
                     break;
                 }
                 default: {
@@ -75,7 +76,7 @@ public class GitHubWebhookRestController {
     }
 
     private void handlePushEvent(JsonObject jsonObject) {
-        LOGGER.info("Received a push event");
+        LOGGER.info("REPO PUSH Event");
     }
 
     private void handleIssueCommentEvent(JsonObject jsonObject) {
@@ -103,7 +104,7 @@ public class GitHubWebhookRestController {
                     break;
                 }
                 case EDITED: {
-                    System.out.println("Issue comment edited");
+                    LOGGER.info("Issue comment edited");
                     break;
                 }
                 default: {
