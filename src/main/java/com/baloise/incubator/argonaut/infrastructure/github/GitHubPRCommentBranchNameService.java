@@ -4,9 +4,8 @@ import com.baloise.incubator.argonaut.domain.PRCommentBranchNameService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.support.BasicAuthenticationInterceptor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -14,16 +13,13 @@ import org.springframework.web.client.RestTemplate;
 @ConditionalGitHub
 public class GitHubPRCommentBranchNameService implements PRCommentBranchNameService {
 
-    @Value("${argonaut.githubtoken}")
-    private String apiToken;
+    @Autowired
+    private RestTemplate restTemplate;
 
     @Override
-    public String getBranchNameForPrCommentUrl(String url) {
-        RestTemplate restTemplate = new RestTemplate();
-        restTemplate.getInterceptors().add(
-                new BasicAuthenticationInterceptor("", apiToken));
+    public String getBranchNameForPrCommentUrl(String baseRepoAPIUrl, int issueNr) {
         ResponseEntity<GitHubIssueDto> issueResponse =
-                restTemplate.getForEntity(url.replace("/comments", ""), GitHubIssueDto.class);
+                restTemplate.getForEntity(baseRepoAPIUrl + "/issues/" + issueNr, GitHubIssueDto.class);
         String prUrl = issueResponse.getBody().getPull_request().getUrl();
         ResponseEntity<GitHubIssuePullRequestDto> issuePullRequestResponse =
                 restTemplate.getForEntity(prUrl, GitHubIssuePullRequestDto.class);

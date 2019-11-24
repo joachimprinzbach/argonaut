@@ -87,9 +87,11 @@ public class GitHubWebhookRestController {
                 case CREATED: {
                     JsonObject comment = jsonObject.get("comment").getAsJsonObject();
                     String commentText = comment.get("body").getAsString();
-                    String commentApiUrl = jsonObject.get("issue").getAsJsonObject().get("comments_url").getAsString();
+                    JsonObject issue = jsonObject.get("issue").getAsJsonObject();
+                    String baseRepoAPIUrl = issue.get("repository_url").getAsString();
+                    int issueNr = issue.get("number").getAsInt();
                     if (commentText.startsWith("/ping")) {
-                        pullRequestCommentService.createPullRequestComment(new PullRequestComment("pong!"), commentApiUrl);
+                        pullRequestCommentService.createPullRequestComment(new PullRequestComment("pong!"), baseRepoAPIUrl, issueNr);
                     } else {
                         String deployText = "/deploy ";
                         if (commentText.startsWith(deployText)) {
@@ -98,7 +100,7 @@ public class GitHubWebhookRestController {
                             String repoUrl = repository.get("svn_url").getAsString();
                             String repoFullName = repository.get("full_name").getAsString();
                             String tag = commentText.substring(commentText.indexOf(deployText) + deployText.length());
-                            deployPullRequestService.deploy(repoUrl + "-deployment-configuration", repoFullName, repoName, tag, commentApiUrl);
+                            deployPullRequestService.deploy(repoUrl + "-deployment-configuration", repoFullName, repoName, tag, baseRepoAPIUrl, issueNr);
                         }
                     }
                     break;

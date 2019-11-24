@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 public class BitBucketPullRequestCommentService implements PullRequestCommentService {
 
     @Override
-    public void createPullRequestComment(PullRequestComment pullRequestComment, String commentApiUrl) {
+    public void createPullRequestComment(PullRequestComment pullRequestComment, String commentApiUrl, int issueNr) {
         System.out.println("bitbucket");
     }
 }

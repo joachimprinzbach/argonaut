@@ -25,8 +25,8 @@ public class ArgonautApplication {
 
     @Scheduled(fixedDelay = 10000000)
     public void bla() {
-        //deployPullRequestService.deploy("https://github.com/baloise-incubator/argonaut-deployment-configuration", "baloise-incubator/argonaut", "argonaut", "latest", "https://api.github.com/repos/baloise-incubator/argonaut/issues/1");
-        //commentService.createPullRequestComment(new PullRequestComment("blabb"), "https://api.github.com/repos/baloise-incubator/argonaut/issues/1");
+        // deployPullRequestService.deploy("https://github.com/baloise-incubator/argonaut-deployment-configuration", "baloise-incubator/argonaut", "argonaut", "latest", "https://api.github.com/repos/baloise-incubator/argonaut/issues/1/comments");
+        //commentService.createPullRequestComment(new PullRequestComment("blabb"), "https://api.github.com/repos/baloise-incubator/argonaut/issues/1/comments");
     }
 
 }

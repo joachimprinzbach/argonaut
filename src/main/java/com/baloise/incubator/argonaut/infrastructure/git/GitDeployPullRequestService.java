@@ -39,9 +39,9 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
     private PullRequestCommentService pullRequestCommentService;
 
     @Override
-    public void deploy(String url, String fullName, String applicationName, String newImageTag, String commentApiUrl) {
-        LOGGER.info("Deploying with url: {}, fullOrgRepoName: {}, appName: {}, newImageTag: {}, commentApiUrl: {}", url, fullName, applicationName, newImageTag, commentApiUrl);
-        String sanitizedBranchName = prCommentBranchNameService.getBranchNameForPrCommentUrl(commentApiUrl).replace("/", "-");
+    public void deploy(String url, String fullName, String applicationName, String newImageTag, String baseApiURL, int issueNr) {
+        LOGGER.info("Deploying with url: {}, fullOrgRepoName: {}, appName: {}, newImageTag: {}, baseApiURL: {}", url, fullName, applicationName, newImageTag, baseApiURL);
+        String sanitizedBranchName = prCommentBranchNameService.getBranchNameForPrCommentUrl(baseApiURL, issueNr).replace("/", "-");
         LOGGER.info("Sanitized branchname: {}", sanitizedBranchName);
         File tempRootDirectory = tempFolder.getFile();
         boolean succeeded = tempRootDirectory.mkdir();
@@ -94,7 +94,7 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
                     .setCredentialsProvider(new UsernamePasswordCredentialsProvider("ttt-travis-bot", apiToken))
                     .call();
             LOGGER.info("Pushed changes.");
-            pullRequestCommentService.createPullRequestComment(new PullRequestComment("Successfully deployed version " + newImageTag), commentApiUrl);
+            pullRequestCommentService.createPullRequestComment(new PullRequestComment("Successfully deployed version " + newImageTag), baseApiURL, issueNr);
         } catch (
                 GitAPIException | InvalidConfigurationException | IOException e) {
             e.printStackTrace();
