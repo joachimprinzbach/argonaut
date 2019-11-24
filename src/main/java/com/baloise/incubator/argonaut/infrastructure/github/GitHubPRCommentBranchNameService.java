@@ -22,12 +22,12 @@ public class GitHubPRCommentBranchNameService implements PRCommentBranchNameServ
         RestTemplate restTemplate = new RestTemplate();
         restTemplate.getInterceptors().add(
                 new BasicAuthenticationInterceptor("", apiToken));
-        ResponseEntity<GitHubIssueDto> forEntity =
-                restTemplate.getForEntity(url, GitHubIssueDto.class);
-        String prUrl = forEntity.getBody().getPull_request().getUrl();
-        ResponseEntity<GitHubIssuePullRequestDto> forEntity2 =
+        ResponseEntity<GitHubIssueDto> issueResponse =
+                restTemplate.getForEntity(url.replace("/comments", ""), GitHubIssueDto.class);
+        String prUrl = issueResponse.getBody().getPull_request().getUrl();
+        ResponseEntity<GitHubIssuePullRequestDto> issuePullRequestResponse =
                 restTemplate.getForEntity(prUrl, GitHubIssuePullRequestDto.class);
-        return forEntity2.getBody().getHead().getRef();
+        return issuePullRequestResponse.getBody().getHead().getRef();
     }
 }
 
