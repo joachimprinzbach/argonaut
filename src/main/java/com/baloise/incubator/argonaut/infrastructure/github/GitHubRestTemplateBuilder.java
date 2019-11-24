@@ -16,7 +16,8 @@ public class GitHubRestTemplateBuilder {
 
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
-        builder.interceptors(new BasicAuthenticationInterceptor("", apiToken));
-        return builder.build();
+        return builder
+                .interceptors(new BasicAuthenticationInterceptor("", apiToken))
+                .build();
     }
 }
