@@ -12,13 +12,8 @@ public class PullRequest {
     private String head;
     private String base;
 
-    public PullRequestComment createNewPullRequestComment(String comment) {
-        return new PullRequestComment(comment, this);
-    }
-
     public String getFullName() {
         return organisation + "/" + repository;
     }
-
 
 }

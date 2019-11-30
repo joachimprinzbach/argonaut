@@ -1,6 +1,9 @@
 package com.baloise.incubator.argonaut.infrastructure.git;
 
-import com.baloise.incubator.argonaut.domain.*;
+import com.baloise.incubator.argonaut.domain.DeployPullRequestService;
+import com.baloise.incubator.argonaut.domain.PullRequest;
+import com.baloise.incubator.argonaut.domain.PullRequestComment;
+import com.baloise.incubator.argonaut.domain.PullRequestCommentService;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -37,15 +40,15 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
     private GitHub gitHub;
 
     @Override
-    public void deploy(PullRequest pullRequest, String url, String newImageTag) {
-            String ref = "";
+    public void deploy(PullRequest pullRequest, String deploymentRepoUrl, String newImageTag) {
+        String branchName = "";
         try {
-            ref = gitHub.getRepository(pullRequest.getFullName()).getPullRequest(pullRequest.getId()).getHead().getRef();
+            branchName = gitHub.getRepository(pullRequest.getFullName()).getPullRequest(pullRequest.getId()).getHead().getRef();
         } catch (IOException e) {
             LOGGER.error("Error getting PR HEAD REF: ", e);
         }
-        LOGGER.info("Deploying url: {}, pullRequest: {}, newImageTag: {}", url, pullRequest, newImageTag);
-        String sanitizedBranchName = ref.replace("/", "-");
+        LOGGER.info("Deploying url: {}, pullRequest: {}, newImageTag: {}", deploymentRepoUrl, pullRequest, newImageTag);
+        String sanitizedBranchName = branchName.replace("/", "-");
         LOGGER.info("Sanitized branchname: {}", sanitizedBranchName);
         File tempRootDirectory = tempFolder.getFile();
         boolean succeeded = tempRootDirectory.mkdir();
@@ -58,7 +61,7 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
 
         try {
             Git git = Git.cloneRepository()
-                    .setURI(url)
+                    .setURI(deploymentRepoUrl)
                     .setDirectory(uuidWorkingDir)
                     .call();
             if (!"master".equals(sanitizedBranchName)) {
