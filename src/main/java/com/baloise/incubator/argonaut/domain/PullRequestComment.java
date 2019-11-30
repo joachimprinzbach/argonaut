@@ -6,4 +6,5 @@ import lombok.Value;
 public class PullRequestComment {
 
     private final String commentText;
+    private final PullRequest pullRequest;
 }

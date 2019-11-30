@@ -1,10 +1,14 @@
 package com.baloise.incubator.argonaut.application.github;
 
 import com.baloise.incubator.argonaut.domain.DeployPullRequestService;
+import com.baloise.incubator.argonaut.domain.PullRequest;
 import com.baloise.incubator.argonaut.domain.PullRequestComment;
 import com.baloise.incubator.argonaut.domain.PullRequestCommentService;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.kohsuke.github.GHEventPayload;
+import org.kohsuke.github.GHRepository;
+import org.kohsuke.github.GitHub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.Optional;
 
 @RestController
@@ -27,23 +33,28 @@ public class GitHubWebhookRestController {
     @Autowired
     private DeployPullRequestService deployPullRequestService;
 
+    @Autowired
+    private GitHub gitHub;
+
     @PostMapping(path = "webhook/github")
-    public void handleGitHubWebhookEvent(@RequestBody String data, @RequestHeader(GITHUB_EVENT_HEADER_KEY) String githubEvent) {
+    public void handleGitHubWebhookEvent(@RequestBody String data, @RequestHeader(GITHUB_EVENT_HEADER_KEY) String githubEvent) throws IOException {
         Optional<GitHubEventType> gitHubEventType = GitHubEventType.fromEventName(githubEvent);
         if (gitHubEventType.isPresent()) {
-            JsonObject jsonObject = new JsonParser().parse(data).getAsJsonObject();
             LOGGER.info("Received Event of type {}", gitHubEventType.get());
             switch (gitHubEventType.get()) {
                 case PULL_REQUEST: {
-                    handlePullRequestEvent(jsonObject);
+                    GHEventPayload.PullRequest pullRequest = gitHub.parseEventPayload(new StringReader(data), GHEventPayload.PullRequest.class);
+                    handlePullRequestEvent(pullRequest);
                     break;
                 }
                 case PUSH: {
-                    handlePushEvent(jsonObject);
+                    GHEventPayload.Push push = gitHub.parseEventPayload(new StringReader(data), GHEventPayload.Push.class);
+                    handlePushEvent(push);
                     break;
                 }
                 case ISSUE_COMMENT: {
-                    handleIssueCommentEvent(jsonObject);
+                    GHEventPayload.IssueComment issueComment = gitHub.parseEventPayload(new StringReader(data), GHEventPayload.IssueComment.class);
+                    handleIssueCommentEvent(issueComment);
                     break;
                 }
                 default: {
@@ -55,63 +66,50 @@ public class GitHubWebhookRestController {
         }
     }
 
-    private void handlePullRequestEvent(JsonObject jsonObject) {
-        String action = getActionElementValue(jsonObject);
-        Optional<GitHubPullRequestEventAction> gitHubPullRequestEventAction = GitHubPullRequestEventAction.fromActionName(action);
-        if (gitHubPullRequestEventAction.isPresent()) {
-            switch (gitHubPullRequestEventAction.get()) {
-                case CLOSED: {
+    private void handlePullRequestEvent(GHEventPayload.PullRequest pullRequest) {
+            switch (pullRequest.getAction()) {
+                case "closed": {
                     LOGGER.info("PR CLOSED Event");
                     break;
                 }
-                case OPENED: {
+                case "opened": {
                     LOGGER.info("PR OPENED Event");
                     break;
                 }
                 default: {
-                    LOGGER.info("Unhandled GitHub Pull Request Event Action: {}", gitHubPullRequestEventAction.get());
+                    LOGGER.info("Unhandled GitHub Pull Request Event Action: {}", pullRequest.getAction());
                 }
             }
-        }
     }
 
-    private void handlePushEvent(JsonObject jsonObject) {
+    private void handlePushEvent(GHEventPayload.Push push) {
         LOGGER.info("REPO PUSH Event");
     }
 
-    private void handleIssueCommentEvent(JsonObject jsonObject) {
-        String action = getActionElementValue(jsonObject);
-        Optional<GitHubIssueCommentEventAction> gitHubIssueCommentEventAction = GitHubIssueCommentEventAction.fromActionName(action);
-        if (gitHubIssueCommentEventAction.isPresent()) {
-            switch (gitHubIssueCommentEventAction.get()) {
-                case CREATED: {
-                    JsonObject comment = jsonObject.get("comment").getAsJsonObject();
-                    String commentText = comment.get("body").getAsString();
-                    JsonObject issue = jsonObject.get("issue").getAsJsonObject();
-                    String baseRepoAPIUrl = issue.get("repository_url").getAsString();
-                    int issueNr = issue.get("number").getAsInt();
-                    if (commentText.startsWith("/ping")) {
-                        pullRequestCommentService.createPullRequestComment(new PullRequestComment("pong!"), baseRepoAPIUrl, issueNr);
-                    } else {
-                        String deployText = "/deploy ";
-                        if (commentText.startsWith(deployText)) {
-                            JsonObject repository = jsonObject.get("repository").getAsJsonObject();
-                            String repoName = repository.get("name").getAsString();
-                            String repoUrl = repository.get("svn_url").getAsString();
-                            String repoFullName = repository.get("full_name").getAsString();
-                            String tag = commentText.substring(commentText.indexOf(deployText) + deployText.length());
-                            deployPullRequestService.deploy(repoUrl + "-deployment-configuration", repoFullName, repoName, tag, baseRepoAPIUrl, issueNr);
-                        }
+    private void handleIssueCommentEvent(GHEventPayload.IssueComment issueComment) {
+        switch (issueComment.getAction()) {
+            case "created": {
+                String commentText = issueComment.getComment().getBody();
+                GHRepository repository = issueComment.getRepository();
+                PullRequest pullRequest = new PullRequest(issueComment.getIssue().getNumber(), repository.getOwnerName(), repository.getName());
+                if (commentText.startsWith("/ping")) {
+                    pullRequestCommentService.createPullRequestComment(new PullRequestComment("pong!", pullRequest));
+                } else {
+                    String deployText = "/deploy ";
+                    if (commentText.startsWith(deployText)) {
+                        String repoUrl = repository.getSvnUrl();
+                        String tag = commentText.substring(commentText.indexOf(deployText) + deployText.length());
+                        deployPullRequestService.deploy(pullRequest, repoUrl + "-deployment-configuration", tag);
                     }
-                    break;
                 }
-                case EDITED: {
-                    LOGGER.info("Issue comment edited");
-                    break;
-                }
-                default: {
-                    LOGGER.info("Unhandled GitHub Issue Comment Event Action: {}", gitHubIssueCommentEventAction.get());
-                }
+                break;
+            }
+            case "edited": {
+                LOGGER.info("Issue comment edited");
+                break;
+            }
+            default: {
+                LOGGER.warn("Unhandled GitHub Issue Comment Event Action: {}", issueComment.getAction());
             }
         }
     }
