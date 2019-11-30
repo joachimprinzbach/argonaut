@@ -4,6 +4,7 @@ import com.baloise.incubator.argonaut.domain.DeployPullRequestService;
 import com.baloise.incubator.argonaut.domain.PullRequest;
 import com.baloise.incubator.argonaut.domain.PullRequestComment;
 import com.baloise.incubator.argonaut.domain.PullRequestCommentService;
+import com.baloise.incubator.argonaut.infrastructure.github.ConditionalGitHub;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
@@ -20,6 +21,7 @@ import java.io.StringReader;
 import java.util.Optional;
 
 @RestController
+@ConditionalGitHub
 public class GitHubWebhookRestController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GitHubWebhookRestController.class);

@@ -4,6 +4,7 @@ import com.baloise.incubator.argonaut.domain.DeployPullRequestService;
 import com.baloise.incubator.argonaut.domain.PullRequest;
 import com.baloise.incubator.argonaut.domain.PullRequestComment;
 import com.baloise.incubator.argonaut.domain.PullRequestCommentService;
+import com.baloise.incubator.argonaut.infrastructure.github.ConditionalGitHub;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -23,11 +24,13 @@ import java.io.IOException;
 import java.util.UUID;
 
 @Service
+// TODO: Remove dependency to github
+@ConditionalGitHub
 public class GitDeployPullRequestService implements DeployPullRequestService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GitDeployPullRequestService.class);
 
-    @Value("${argonaut.githubtoken}")
+    @Value("${argonaut.gittoken}")
     private String apiToken;
 
     @Value("${argonaut.tempfolder}")
