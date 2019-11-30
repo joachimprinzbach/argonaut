@@ -96,8 +96,8 @@ public class GitHubWebhookRestController {
                 GHRepository repository = issueComment.getRepository();
                 GHPullRequest ghPullRequest = repository.getPullRequest(issueComment.getIssue().getNumber());
                 PullRequest pullRequest = createPullRequest(issueComment.getIssue().getNumber(), repository, ghPullRequest);
-                String deployText = "/deploy ";
-                String promoteText = "/promote ";
+                String deployText = "/deploy";
+                String promoteText = "/promote";
                 if (commentText.startsWith("/ping")) {
                     pullRequestCommentService.createPullRequestComment(new PullRequestComment("pong!", pullRequest));
                 } else if (commentText.startsWith(deployText)) {
