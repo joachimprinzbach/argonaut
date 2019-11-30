@@ -89,12 +89,12 @@ public class GitHubWebhookRestController {
         LOGGER.info("REPO PUSH Event");
     }
 
-    private void handleIssueCommentEvent(GHEventPayload.IssueComment issueComment) throws IOException {
+    private void handleIssueCommentEvent(GHEventPayload.IssueComment issueComment) {
         LOGGER.info("Receiving issueComment Event: {}", issueComment);
         switch (issueComment.getAction()) {
             case "created": {
                 String commentText = issueComment.getComment().getBody();
-                PullRequest pullRequest = new PullRequest(issueComment.getIssue().getNumber(), issueComment.getRepository().getOwner().getName(), issueComment.getRepository().getName());
+                PullRequest pullRequest = new PullRequest(issueComment.getIssue().getNumber(), issueComment.getRepository().getOwnerName(), issueComment.getRepository().getName());
                 if (commentText.startsWith("/ping")) {
                     pullRequestCommentService.createPullRequestComment(new PullRequestComment("pong!", pullRequest));
                 } else {
