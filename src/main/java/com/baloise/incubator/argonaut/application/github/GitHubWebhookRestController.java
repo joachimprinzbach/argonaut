@@ -40,15 +40,16 @@ public class GitHubWebhookRestController {
     public void handleGitHubWebhookEvent(@RequestBody String data, @RequestHeader(GITHUB_EVENT_HEADER_KEY) String githubEvent) throws IOException {
         Optional<GitHubEventType> gitHubEventType = GitHubEventType.fromEventName(githubEvent);
         if (gitHubEventType.isPresent()) {
-            JsonObject jsonObject = new JsonParser().parse(data).getAsJsonObject();
             LOGGER.info("Received Event of type {}", gitHubEventType.get());
             switch (gitHubEventType.get()) {
                 case PULL_REQUEST: {
-                    handlePullRequestEvent(jsonObject);
+                    GHEventPayload.PullRequest pullRequest = gitHub.parseEventPayload(new StringReader(data), GHEventPayload.PullRequest.class);
+                    handlePullRequestEvent(pullRequest);
                     break;
                 }
                 case PUSH: {
-                    handlePushEvent(jsonObject);
+                    GHEventPayload.Push push = gitHub.parseEventPayload(new StringReader(data), GHEventPayload.Push.class);
+                    handlePushEvent(push);
                     break;
                 }
                 case ISSUE_COMMENT: {
@@ -65,32 +66,27 @@ public class GitHubWebhookRestController {
         }
     }
 
-    private void handlePullRequestEvent(JsonObject jsonObject) {
-        String action = getActionElementValue(jsonObject);
-        Optional<GitHubPullRequestEventAction> gitHubPullRequestEventAction = GitHubPullRequestEventAction.fromActionName(action);
-        if (gitHubPullRequestEventAction.isPresent()) {
-            switch (gitHubPullRequestEventAction.get()) {
-                case CLOSED: {
+    private void handlePullRequestEvent(GHEventPayload.PullRequest pullRequest) {
+            switch (pullRequest.getAction()) {
+                case "closed": {
                     LOGGER.info("PR CLOSED Event");
                     break;
                 }
-                case OPENED: {
+                case "opened": {
                     LOGGER.info("PR OPENED Event");
                     break;
                 }
                 default: {
-                    LOGGER.info("Unhandled GitHub Pull Request Event Action: {}", gitHubPullRequestEventAction.get());
+                    LOGGER.info("Unhandled GitHub Pull Request Event Action: {}", pullRequest.getAction());
                 }
             }
-        }
     }
 
-    private void handlePushEvent(JsonObject jsonObject) {
+    private void handlePushEvent(GHEventPayload.Push push) {
         LOGGER.info("REPO PUSH Event");
     }
 
     private void handleIssueCommentEvent(GHEventPayload.IssueComment issueComment) {
-        LOGGER.info("Receiving issueComment Event: {}", issueComment);
         switch (issueComment.getAction()) {
             case "created": {
                 String commentText = issueComment.getComment().getBody();
@@ -113,7 +109,7 @@ public class GitHubWebhookRestController {
                 break;
             }
             default: {
-                LOGGER.warn("Unhandled GitHub Issue Comment Event Action: {}", issueComment);
+                LOGGER.warn("Unhandled GitHub Issue Comment Event Action: {}", issueComment.getAction());
             }
         }
     }
