@@ -94,7 +94,7 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
                     .setCredentialsProvider(new UsernamePasswordCredentialsProvider("ttt-travis-bot", apiToken))
                     .call();
             LOGGER.info("Pushed changes.");
-            pullRequestCommentService.createPullRequestComment(new PullRequestComment("Successfully deployed version " + newImageTag), baseApiURL, issueNr);
+            //pullRequestCommentService.createPullRequestComment(new PullRequestComment("Successfully deployed version " + newImageTag), baseApiURL, issueNr);
         } catch (
                 GitAPIException | InvalidConfigurationException | IOException e) {
             e.printStackTrace();

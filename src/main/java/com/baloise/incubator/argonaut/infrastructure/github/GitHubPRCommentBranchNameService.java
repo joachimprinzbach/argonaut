@@ -4,6 +4,7 @@ import com.baloise.incubator.argonaut.domain.PRCommentBranchNameService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.kohsuke.github.GitHub;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,9 @@ import org.springframework.web.client.RestTemplate;
 @Service
 @ConditionalGitHub
 public class GitHubPRCommentBranchNameService implements PRCommentBranchNameService {
+
+    @Autowired
+    private GitHub gitHub;
 
     @Autowired
     private RestTemplate restTemplate;
