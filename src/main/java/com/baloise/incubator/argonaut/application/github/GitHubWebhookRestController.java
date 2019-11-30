@@ -96,14 +96,14 @@ public class GitHubWebhookRestController {
                 GHRepository repository = issueComment.getRepository();
                 GHPullRequest ghPullRequest = repository.getPullRequest(issueComment.getIssue().getNumber());
                 PullRequest pullRequest = createPullRequest(issueComment.getIssue().getNumber(), repository, ghPullRequest);
-                String deployText = "/deploy";
-                String promoteText = "/promote";
-                if (commentText.startsWith("/ping")) {
+                if ("/ping".startsWith(commentText)) {
                     pullRequestCommentService.createPullRequestComment(new PullRequestComment("pong!", pullRequest));
-                } else if (commentText.startsWith(deployText)) {
+                } else if ("/deploy".startsWith(commentText)) {
                     deployPullRequestService.deploy(pullRequest);
-                } else if (commentText.startsWith(promoteText)) {
+                } else if ("/promote".startsWith(commentText)) {
                     deployPullRequestService.promoteToProd(pullRequest);
+                } else {
+                    LOGGER.info("Unhandled comment command: " + commentText);
                 }
                 break;
             }
