@@ -66,18 +66,20 @@ public class GitHubWebhookRestController {
         }
     }
 
-    private void handlePullRequestEvent(GHEventPayload.PullRequest pullRequest) {
-            switch (pullRequest.getAction()) {
+    private void handlePullRequestEvent(GHEventPayload.PullRequest ghPullRequest) {
+            switch (ghPullRequest.getAction()) {
                 case "closed": {
                     LOGGER.info("PR CLOSED Event");
                     break;
                 }
                 case "opened": {
+                    PullRequest pullRequest = new PullRequest(ghPullRequest.getNumber(), ghPullRequest.getRepository().getOwnerName(), ghPullRequest.getRepository().getName());
+                    pullRequestCommentService.createPullRequestComment(new PullRequestComment("[APPROVALNOTIFIER] This PR is **NOT APPROVED**\\n\\nThis pull-request has been approved by:\\nTo fully approve this pull request, please assign additional approvers.\\nWe suggest the following additional approver: **joachimprinzbach**\\n\\nIf they are not already assigned, you can assign the PR to them by writing `/assign @joachimprinzbach` in a comment when ready.\\n\\nThe full list of commands accepted by this bot can be found [here](dead.link).\\n\\nThe pull request process is described [here](also-dead-link)\\n\\n<details open>\\nNeeds approval from an approver in each of these files:\\n\\n- **[OWNERS](dead.link)**\\n\\nApprovers can indicate their approval by writing `/approve` in a comment\\nApprovers can cancel approval by writing `/approve cancel` in a comment\\n</details>\\n<!-- META={\\\"approvers\\\":[\\\"joachimprinzbach\\\"]} -->\"", pullRequest));
                     LOGGER.info("PR OPENED Event");
                     break;
                 }
                 default: {
-                    LOGGER.info("Unhandled GitHub Pull Request Event Action: {}", pullRequest.getAction());
+                    LOGGER.info("Unhandled GitHub Pull Request Event Action: {}", ghPullRequest.getAction());
                 }
             }
     }
