@@ -74,7 +74,7 @@ public class GitHubWebhookRestController {
                 }
                 case "opened": {
                     PullRequest pullRequest = new PullRequest(ghPullRequest.getNumber(), ghPullRequest.getRepository().getOwnerName(), ghPullRequest.getRepository().getName());
-                    pullRequestCommentService.createPullRequestComment(new PullRequestComment("[APPROVALNOTIFIER] This PR is **NOT APPROVED**\\n\\nThis pull-request has been approved by:\\nTo fully approve this pull request, please assign additional approvers.\\nWe suggest the following additional approver: **joachimprinzbach**\\n\\nIf they are not already assigned, you can assign the PR to them by writing `/assign @joachimprinzbach` in a comment when ready.\\n\\nThe full list of commands accepted by this bot can be found [here](dead.link).\\n\\nThe pull request process is described [here](also-dead-link)\\n\\n<details open>\\nNeeds approval from an approver in each of these files:\\n\\n- **[OWNERS](dead.link)**\\n\\nApprovers can indicate their approval by writing `/approve` in a comment\\nApprovers can cancel approval by writing `/approve cancel` in a comment\\n</details>\\n<!-- META={\\\"approvers\\\":[\\\"joachimprinzbach\\\"]} -->\"", pullRequest));
+                    pullRequestCommentService.createPullRequestComment(new PullRequestComment("This PR is managed by **Argonaut** \n\n You can use the command `/ping` as pull request command to test the interaction in a comment. \n\n You can use the command `/deploy {image_tag}` to deploy an image into this preview environment. \n\n You can use the command `/promote {image_tag}` to deploy an image to production.", pullRequest));
                     LOGGER.info("PR OPENED Event");
                     break;
                 }
