@@ -9,7 +9,6 @@ import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
-import org.kohsuke.github.GitHub;
 import org.simpleyaml.configuration.file.YamlFile;
 import org.simpleyaml.exceptions.InvalidConfigurationException;
 import org.slf4j.Logger;
@@ -24,7 +23,6 @@ import java.io.IOException;
 import java.util.UUID;
 
 @Service
-// TODO: Remove dependency to github
 @ConditionalGitHub
 public class GitDeployPullRequestService implements DeployPullRequestService {
 
@@ -39,29 +37,22 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
     @Autowired
     private PullRequestCommentService pullRequestCommentService;
 
-    @Autowired
-    private GitHub gitHub;
-
     @Override
-    public void deploy(PullRequest pullRequest, String deploymentRepoUrl, String newImageTag) {
-        String branchName = "";
-        try {
-            branchName = gitHub.getRepository(pullRequest.getFullName()).getPullRequest(pullRequest.getId()).getHead().getRef();
-        } catch (IOException e) {
-            LOGGER.error("Error getting PR HEAD REF: ", e);
-        }
-        deploy(pullRequest, deploymentRepoUrl, newImageTag, branchName);
+    public void deploy(PullRequest pullRequest) {
+        deployBranch(pullRequest, pullRequest.getHeadBranchName());
     }
 
     @Override
-    public void promoteToProd(PullRequest pullRequest, String deploymentRepoUrl, String newImageTag) {
-        deploy(pullRequest, deploymentRepoUrl, newImageTag, "master");
+    public void promoteToProd(PullRequest pullRequest) {
+        deployBranch(pullRequest, "master");
     }
 
-    private void deploy(PullRequest pullRequest, String deploymentRepoUrl, String newImageTag, String branchName) {
-        LOGGER.info("Deploying url: {}, pullRequest: {}, newImageTag: {}", deploymentRepoUrl, pullRequest, newImageTag);
+    private void deployBranch(PullRequest pullRequest, String branchName) {
+        LOGGER.info("Deploying branch: {}, pullRequest: {}", branchName, pullRequest);
         String sanitizedBranchName = branchName.replace("/", "-");
         LOGGER.info("Sanitized branchname: {}", sanitizedBranchName);
+        String newImageTag = sanitizedBranchName + "-" + pullRequest.getHeadCommitSHA();
+        LOGGER.info("New Image Tag: {}", newImageTag);
         File tempRootDirectory = tempFolder.getFile();
         boolean succeeded = tempRootDirectory.mkdir();
         LOGGER.info("temp folder created: {}", succeeded);
@@ -73,13 +64,13 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
 
         try {
             Git git = Git.cloneRepository()
-                    .setURI(deploymentRepoUrl)
+                    .setURI(pullRequest.getBaseRepoGitUrl() + "-deployment-configuration")
                     .setDirectory(uuidWorkingDir)
                     .call();
             if (!"master".equals(sanitizedBranchName)) {
                 branchSpecificFolderName += "-" + sanitizedBranchName;
                 branchSpecificFolder = new File(uuidWorkingDir, branchSpecificFolderName);
-                if (!branchSpecificFolder.exists() || branchSpecificFolderName.isEmpty()) {
+                if (!branchSpecificFolder.exists()) {
                     FileUtils.copyDirectory(masterFolder, branchSpecificFolder);
                     LOGGER.info("PR Deployment {} does not exist, copying directory content from master directory: {}", branchSpecificFolder.getName(), masterFolder.getName());
                 }

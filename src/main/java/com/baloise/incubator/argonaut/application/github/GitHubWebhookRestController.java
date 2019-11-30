@@ -6,6 +6,7 @@ import com.baloise.incubator.argonaut.domain.PullRequestComment;
 import com.baloise.incubator.argonaut.domain.PullRequestCommentService;
 import com.baloise.incubator.argonaut.infrastructure.github.ConditionalGitHub;
 import org.kohsuke.github.GHEventPayload;
+import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
 import org.slf4j.Logger;
@@ -73,8 +74,8 @@ public class GitHubWebhookRestController {
                 break;
             }
             case "opened": {
-                PullRequest pullRequest = new PullRequest(ghPullRequest.getNumber(), ghPullRequest.getRepository().getOwnerName(), ghPullRequest.getRepository().getName());
-                pullRequestCommentService.createPullRequestComment(new PullRequestComment("This PR is managed by **[Argonaut](https://github.com/baloise-incubator/argonaut).** \n\n You can use the command `/ping` as pull request command to test the interaction in a comment. \n\n You can use the command `/deploy {image_tag}` to deploy an image into this preview environment. \nYou can use the command `/promote {image_tag}` to deploy an image to production.", pullRequest));
+                PullRequest pullRequest = createPullRequest(ghPullRequest.getNumber(), ghPullRequest.getRepository(), ghPullRequest.getPullRequest());
+                pullRequestCommentService.createPullRequestComment(new PullRequestComment("This PR is managed by **[Argonaut](https://github.com/baloise-incubator/argonaut).** \n\n You can use the command `/ping` as pull request command to test the interaction in a comment. \n\n You can use the command `/deploy` to deploy this branch to it's preview environment (after build is successfull). \nYou can use the command `/promote` to promote this branch to production.", pullRequest));
                 LOGGER.info("PR OPENED Event");
                 break;
             }
@@ -88,24 +89,21 @@ public class GitHubWebhookRestController {
         LOGGER.info("REPO PUSH Event");
     }
 
-    private void handleIssueCommentEvent(GHEventPayload.IssueComment issueComment) {
+    private void handleIssueCommentEvent(GHEventPayload.IssueComment issueComment) throws IOException {
         switch (issueComment.getAction()) {
             case "created": {
                 String commentText = issueComment.getComment().getBody();
                 GHRepository repository = issueComment.getRepository();
-                PullRequest pullRequest = new PullRequest(issueComment.getIssue().getNumber(), repository.getOwnerName(), repository.getName());
+                GHPullRequest ghPullRequest = repository.getPullRequest(issueComment.getIssue().getNumber());
+                PullRequest pullRequest = createPullRequest(issueComment.getIssue().getNumber(), repository, ghPullRequest);
                 String deployText = "/deploy ";
                 String promoteText = "/promote ";
                 if (commentText.startsWith("/ping")) {
                     pullRequestCommentService.createPullRequestComment(new PullRequestComment("pong!", pullRequest));
                 } else if (commentText.startsWith(deployText)) {
-                    String repoUrl = repository.getSvnUrl();
-                    String tag = commentText.substring(commentText.indexOf(deployText) + deployText.length());
-                    deployPullRequestService.deploy(pullRequest, repoUrl + "-deployment-configuration", tag);
+                    deployPullRequestService.deploy(pullRequest);
                 } else if (commentText.startsWith(promoteText)) {
-                    String repoUrl = repository.getSvnUrl();
-                    String tag = commentText.substring(commentText.indexOf(commentText) + promoteText.length());
-                    deployPullRequestService.promoteToProd(pullRequest, repoUrl + "-deployment-configuration", tag);
+                    deployPullRequestService.promoteToProd(pullRequest);
                 }
                 break;
             }
@@ -117,6 +115,10 @@ public class GitHubWebhookRestController {
                 LOGGER.warn("Unhandled GitHub Issue Comment Event Action: {}", issueComment.getAction());
             }
         }
+    }
+
+    private PullRequest createPullRequest(int id, GHRepository repository, GHPullRequest pullRequest) {
+        return new PullRequest(id, repository.getSvnUrl(), repository.getOwnerName(), repository.getName(), pullRequest.getHead().getRef(), pullRequest.getHead().getSha());
     }
 
 }
