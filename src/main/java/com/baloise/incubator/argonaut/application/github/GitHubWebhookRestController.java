@@ -94,18 +94,16 @@ public class GitHubWebhookRestController {
         switch (issueComment.getAction()) {
             case "created": {
                 String commentText = issueComment.getComment().getBody();
-                PullRequest pullRequest = new PullRequest(issueComment.getIssue().getNumber(), issueComment.getRepository().getOwnerName(), issueComment.getRepository().getName());
+                GHRepository repository = issueComment.getRepository();
+                PullRequest pullRequest = new PullRequest(issueComment.getIssue().getNumber(), repository.getOwnerName(), repository.getName());
                 if (commentText.startsWith("/ping")) {
                     pullRequestCommentService.createPullRequestComment(new PullRequestComment("pong!", pullRequest));
                 } else {
                     String deployText = "/deploy ";
                     if (commentText.startsWith(deployText)) {
-                        GHRepository repository = issueComment.getRepository();
-                        String repoName = repository.getName();
                         String repoUrl = repository.getSvnUrl();
-                        String repoFullName = repository.getFullName();
                         String tag = commentText.substring(commentText.indexOf(deployText) + deployText.length());
-                        deployPullRequestService.deploy(repoUrl + "-deployment-configuration", repoFullName, repoName, tag, null, pullRequest.getId());
+                        deployPullRequestService.deploy(pullRequest, repoUrl + "-deployment-configuration", tag);
                     }
                 }
                 break;
