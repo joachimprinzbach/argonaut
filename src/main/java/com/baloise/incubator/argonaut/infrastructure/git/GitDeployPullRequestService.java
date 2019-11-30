@@ -45,7 +45,7 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
             LOGGER.error("Error getting PR HEAD REF: ", e);
         }
         LOGGER.info("Deploying url: {}, pullRequest: {}, newImageTag: {}", url, pullRequest, newImageTag);
-        String sanitizedBranchName = ref;
+        String sanitizedBranchName = ref.replace("/", "-");
         LOGGER.info("Sanitized branchname: {}", sanitizedBranchName);
         File tempRootDirectory = tempFolder.getFile();
         boolean succeeded = tempRootDirectory.mkdir();
