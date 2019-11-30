@@ -118,11 +118,10 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
                 GitAPIException | InvalidConfigurationException | IOException e) {
             e.printStackTrace();
         }
-        // TODO: Activate later
-/*        try {
+        try {
             FileUtils.deleteDirectory(uuidWorkingDir);
         } catch (IOException e) {
             e.printStackTrace();
-        }*/
+        }
     }
 }
