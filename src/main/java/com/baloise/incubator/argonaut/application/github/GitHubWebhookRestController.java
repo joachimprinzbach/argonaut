@@ -5,7 +5,6 @@ import com.baloise.incubator.argonaut.domain.PullRequest;
 import com.baloise.incubator.argonaut.domain.PullRequestComment;
 import com.baloise.incubator.argonaut.domain.PullRequestCommentService;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
@@ -67,21 +66,21 @@ public class GitHubWebhookRestController {
     }
 
     private void handlePullRequestEvent(GHEventPayload.PullRequest ghPullRequest) {
-            switch (ghPullRequest.getAction()) {
-                case "closed": {
-                    LOGGER.info("PR CLOSED Event");
-                    break;
-                }
-                case "opened": {
-                    PullRequest pullRequest = new PullRequest(ghPullRequest.getNumber(), ghPullRequest.getRepository().getOwnerName(), ghPullRequest.getRepository().getName());
-                    pullRequestCommentService.createPullRequestComment(new PullRequestComment("This PR is managed by **Argonaut** \n\n You can use the command `/ping` as pull request command to test the interaction in a comment. \n\n You can use the command `/deploy {image_tag}` to deploy an image into this preview environment. \n\n You can use the command `/promote {image_tag}` to deploy an image to production.", pullRequest));
-                    LOGGER.info("PR OPENED Event");
-                    break;
-                }
-                default: {
-                    LOGGER.info("Unhandled GitHub Pull Request Event Action: {}", ghPullRequest.getAction());
-                }
+        switch (ghPullRequest.getAction()) {
+            case "closed": {
+                LOGGER.info("PR CLOSED Event");
+                break;
             }
+            case "opened": {
+                PullRequest pullRequest = new PullRequest(ghPullRequest.getNumber(), ghPullRequest.getRepository().getOwnerName(), ghPullRequest.getRepository().getName());
+                pullRequestCommentService.createPullRequestComment(new PullRequestComment("This PR is managed by **[Argonaut](https://github.com/baloise-incubator/argonaut).** \n\n You can use the command `/ping` as pull request command to test the interaction in a comment. \n\n You can use the command `/deploy {image_tag}` to deploy an image into this preview environment. \nYou can use the command `/promote {image_tag}` to deploy an image to production.", pullRequest));
+                LOGGER.info("PR OPENED Event");
+                break;
+            }
+            default: {
+                LOGGER.info("Unhandled GitHub Pull Request Event Action: {}", ghPullRequest.getAction());
+            }
+        }
     }
 
     private void handlePushEvent(GHEventPayload.Push push) {
@@ -94,15 +93,18 @@ public class GitHubWebhookRestController {
                 String commentText = issueComment.getComment().getBody();
                 GHRepository repository = issueComment.getRepository();
                 PullRequest pullRequest = new PullRequest(issueComment.getIssue().getNumber(), repository.getOwnerName(), repository.getName());
+                String deployText = "/deploy ";
+                String promoteText = "/promote ";
                 if (commentText.startsWith("/ping")) {
                     pullRequestCommentService.createPullRequestComment(new PullRequestComment("pong!", pullRequest));
-                } else {
-                    String deployText = "/deploy ";
-                    if (commentText.startsWith(deployText)) {
-                        String repoUrl = repository.getSvnUrl();
-                        String tag = commentText.substring(commentText.indexOf(deployText) + deployText.length());
-                        deployPullRequestService.deploy(pullRequest, repoUrl + "-deployment-configuration", tag);
-                    }
+                } else if (commentText.startsWith(deployText)) {
+                    String repoUrl = repository.getSvnUrl();
+                    String tag = commentText.substring(commentText.indexOf(deployText) + deployText.length());
+                    deployPullRequestService.deploy(pullRequest, repoUrl + "-deployment-configuration", tag);
+                } else if (commentText.startsWith(promoteText)) {
+                    String repoUrl = repository.getSvnUrl();
+                    String tag = commentText.substring(commentText.indexOf(deployText) + deployText.length());
+                    deployPullRequestService.promoteToProd(pullRequest, repoUrl + "-deployment-configuration", tag);
                 }
                 break;
             }

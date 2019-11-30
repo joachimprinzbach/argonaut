@@ -47,6 +47,15 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
         } catch (IOException e) {
             LOGGER.error("Error getting PR HEAD REF: ", e);
         }
+        deploy(pullRequest, deploymentRepoUrl, newImageTag, branchName);
+    }
+
+    @Override
+    public void promoteToProd(PullRequest pullRequest, String deploymentRepoUrl, String newImageTag) {
+        deploy(pullRequest, deploymentRepoUrl, newImageTag, "master");
+    }
+
+    private void deploy(PullRequest pullRequest, String deploymentRepoUrl, String newImageTag, String branchName) {
         LOGGER.info("Deploying url: {}, pullRequest: {}, newImageTag: {}", deploymentRepoUrl, pullRequest, newImageTag);
         String sanitizedBranchName = branchName.replace("/", "-");
         LOGGER.info("Sanitized branchname: {}", sanitizedBranchName);
