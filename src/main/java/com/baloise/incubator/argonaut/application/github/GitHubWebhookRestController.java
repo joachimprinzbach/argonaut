@@ -102,7 +102,7 @@ public class GitHubWebhookRestController {
                     deployPullRequestService.deploy(pullRequest, repoUrl + "-deployment-configuration", tag);
                 } else if (commentText.startsWith(promoteText)) {
                     String repoUrl = repository.getSvnUrl();
-                    String tag = commentText.substring(commentText.indexOf(deployText) + deployText.length());
+                    String tag = commentText.substring(commentText.indexOf(commentText) + promoteText.length());
                     deployPullRequestService.promoteToProd(pullRequest, repoUrl + "-deployment-configuration", tag);
                 }
                 break;
