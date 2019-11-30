@@ -4,7 +4,6 @@ import com.baloise.incubator.argonaut.domain.DeployPullRequestService;
 import com.baloise.incubator.argonaut.domain.PullRequest;
 import com.baloise.incubator.argonaut.domain.PullRequestComment;
 import com.baloise.incubator.argonaut.domain.PullRequestCommentService;
-import com.google.gson.JsonObject;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
@@ -118,7 +117,4 @@ public class GitHubWebhookRestController {
         }
     }
 
-    private String getActionElementValue(JsonObject jsonObject) {
-        return jsonObject.get("action").getAsString();
-    }
 }
