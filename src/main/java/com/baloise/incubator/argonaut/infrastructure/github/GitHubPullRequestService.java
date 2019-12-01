@@ -35,24 +35,27 @@ public class GitHubPullRequestService implements PullRequestService {
     }
 
     @Override
-    public String createPullRequest(PullRequest pullRequest) {
+    public PullRequest createPullRequest(String repositoryFullName, String headBranchName) {
+        LOGGER.info("Creating pr for Repository {} and branch: {}", repositoryFullName, headBranchName);
         try {
-            GHPullRequest createdPr = gitHub.getRepository(pullRequest.getFullName()).createPullRequest("title", pullRequest.getHeadBranchName(), "master", "body");
+            GHPullRequest createdPr = gitHub.getRepository(repositoryFullName).createPullRequest("title", headBranchName, "master", "body");
             LOGGER.info("Successfully commented on Pull Request");
-            return createdPr.getHtmlUrl().toString();
+            return GitHubWebhookRestController.createPullRequest(createdPr);
         } catch (IOException e) {
-            LOGGER.error("Error creating Pull Request: {}, Error: {}", pullRequest, e);
+            LOGGER.error("Error creating Pull Request: {}, Error: {}", repositoryFullName, e);
         }
         return null;
     }
 
     @Override
-    public void mergePullRequest(PullRequest pullRequest) {
+    public void mergePullRequest(String repositoryFullName, int prId) {
+        LOGGER.info("Merging PR with id {} ind repo {}", prId, repositoryFullName);
         try {
-            gitHub.getRepository(pullRequest.getFullName()).getPullRequest(pullRequest.getId()).merge("Merge changes");
-            LOGGER.info("Successfully commented on Pull Request");
+            gitHub.getRepository(repositoryFullName).getPullRequest(prId).merge("Merge changes");
+            LOGGER.info("Successfully merged Pull Request");
         } catch (IOException e) {
-            LOGGER.error("Error merging Pull Request: {}, Error: {}", pullRequest, e);
+            LOGGER.error("Error merging Pull Request: {}, Error: {}", repositoryFullName, e);
         }
     }
+
 }
