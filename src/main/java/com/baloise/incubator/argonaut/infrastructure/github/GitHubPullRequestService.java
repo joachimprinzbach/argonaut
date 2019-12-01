@@ -5,7 +5,6 @@ import com.baloise.incubator.argonaut.domain.PullRequest;
 import com.baloise.incubator.argonaut.domain.PullRequestComment;
 import com.baloise.incubator.argonaut.domain.PullRequestService;
 import org.kohsuke.github.GHPullRequest;
-import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +37,7 @@ public class GitHubPullRequestService implements PullRequestService {
     @Override
     public PullRequest createPullRequest(String repositoryFullName, String headBranchName) {
         try {
-            GHPullRequest createdPr = gitHub.getRepository(repositoryFullName).createPullRequest("title", headBranchName, "master", "body");
+            GHPullRequest createdPr = gitHub.getRepository(repositoryFullName).createPullRequest("title", "ttt-travis-bot:" + headBranchName, "master", "body");
             LOGGER.info("Successfully commented on Pull Request");
             return GitHubWebhookRestController.createPullRequest(createdPr);
         } catch (IOException e) {
