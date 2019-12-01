@@ -97,7 +97,8 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
                     .call();
             String branchName = "deploy/" + pullRequest.getRepository() + pullRequest.getHeadCommitSHA();
             git
-                    .branchCreate()
+                    .checkout()
+                    .setCreateBranch(true)
                     .setName(branchName)
                     .call();
             git
