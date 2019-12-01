@@ -3,7 +3,7 @@ package com.baloise.incubator.argonaut.infrastructure.git;
 import com.baloise.incubator.argonaut.domain.DeployPullRequestService;
 import com.baloise.incubator.argonaut.domain.PullRequest;
 import com.baloise.incubator.argonaut.domain.PullRequestComment;
-import com.baloise.incubator.argonaut.domain.PullRequestCommentService;
+import com.baloise.incubator.argonaut.domain.PullRequestService;
 import com.baloise.incubator.argonaut.infrastructure.github.ConditionalGitHub;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
@@ -35,7 +35,7 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
     private FileSystemResource tempFolder;
 
     @Autowired
-    private PullRequestCommentService pullRequestCommentService;
+    private PullRequestService pullRequestService;
 
     @Override
     public void deploy(PullRequest pullRequest) {
@@ -95,6 +95,10 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
                     .addFilepattern(".")
                     .call();
             git
+                    .branchCreate()
+                    .setName("deploy " + pullRequest.getRepository() + pullRequest.getHeadCommitSHA())
+                    .call();
+            git
                     .commit()
                     .setAuthor("ttt-travis-bot", "joachim.prinzbach+github-ttt-travis-bot@gmail.com")
                     .setMessage("Redeploy")
@@ -104,7 +108,10 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
                     .setCredentialsProvider(new UsernamePasswordCredentialsProvider("ttt-travis-bot", apiToken))
                     .call();
             LOGGER.info("Pushed changes.");
-            pullRequestCommentService.createPullRequestComment(new PullRequestComment("Successfully deployed version " + newImageTag, pullRequest));
+            String prUrl = pullRequestService.createPullRequest(pullRequest);
+            pullRequestService.createPullRequestComment(new PullRequestComment("Successfully deployed version " + newImageTag+". See the PR here: " + prUrl, pullRequest));
+            pullRequestService.mergePullRequest(pullRequest);
+            pullRequestService.createPullRequestComment(new PullRequestComment("Pull Request merged." + prUrl, pullRequest));
         } catch (
                 GitAPIException | InvalidConfigurationException | IOException e) {
             e.printStackTrace();
