@@ -103,13 +103,13 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
             git
                     .commit()
                     .setAuthor("ttt-travis-bot", "joachim.prinzbach+github-ttt-travis-bot@gmail.com")
-                    .setMessage("Redeploy")
+                    .setMessage(branchName)
                     .call();
             git
                     .push()
                     .setCredentialsProvider(new UsernamePasswordCredentialsProvider("ttt-travis-bot", apiToken))
                     .call();
-            LOGGER.info("Pushed changes.");
+            LOGGER.info("Pushed changes to branch {}", branchName);
             String deployConfigFullName = pullRequest.getFullName() + deployConfigNameSuffix;
             PullRequest deployPullRequest = pullRequestService.createPullRequest(deployConfigFullName, branchName);
             pullRequestService.createPullRequestComment(new PullRequestComment("Successfully deployed version " + newImageTag + ". See the PR here: " + deployPullRequest.getPrWebUrl(), pullRequest));

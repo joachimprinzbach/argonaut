@@ -49,9 +49,10 @@ public class GitHubPullRequestService implements PullRequestService {
 
     @Override
     public void mergePullRequest(String repositoryFullName, int prId) {
+        LOGGER.info("Merging PR with id {} ind repo {}", prId, repositoryFullName);
         try {
             gitHub.getRepository(repositoryFullName).getPullRequest(prId).merge("Merge changes");
-            LOGGER.info("Successfully commented on Pull Request");
+            LOGGER.info("Successfully merged Pull Request");
         } catch (IOException e) {
             LOGGER.error("Error merging Pull Request: {}, Error: {}", repositoryFullName, e);
         }
