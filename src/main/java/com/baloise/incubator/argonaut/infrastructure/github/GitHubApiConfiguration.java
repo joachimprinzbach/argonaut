@@ -12,7 +12,7 @@ import java.io.IOException;
 @Component
 public class GitHubApiConfiguration {
 
-    @Value("${argonaut.githubtoken}")
+    @Value("${argonaut.gittoken}")
     private String apiToken;
 
     @Bean

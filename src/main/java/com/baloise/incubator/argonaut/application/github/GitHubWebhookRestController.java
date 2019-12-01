@@ -3,10 +3,10 @@ package com.baloise.incubator.argonaut.application.github;
 import com.baloise.incubator.argonaut.domain.DeployPullRequestService;
 import com.baloise.incubator.argonaut.domain.PullRequest;
 import com.baloise.incubator.argonaut.domain.PullRequestComment;
-import com.baloise.incubator.argonaut.domain.PullRequestCommentService;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.baloise.incubator.argonaut.domain.PullRequestService;
+import com.baloise.incubator.argonaut.infrastructure.github.ConditionalGitHub;
 import org.kohsuke.github.GHEventPayload;
+import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
 import org.slf4j.Logger;
@@ -22,13 +22,14 @@ import java.io.StringReader;
 import java.util.Optional;
 
 @RestController
+@ConditionalGitHub
 public class GitHubWebhookRestController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GitHubWebhookRestController.class);
     private static final String GITHUB_EVENT_HEADER_KEY = "X-GitHub-Event";
 
     @Autowired
-    private PullRequestCommentService pullRequestCommentService;
+    private PullRequestService pullRequestService;
 
     @Autowired
     private DeployPullRequestService deployPullRequestService;
@@ -66,41 +67,42 @@ public class GitHubWebhookRestController {
         }
     }
 
-    private void handlePullRequestEvent(GHEventPayload.PullRequest pullRequest) {
-            switch (pullRequest.getAction()) {
-                case "closed": {
-                    LOGGER.info("PR CLOSED Event");
-                    break;
-                }
-                case "opened": {
-                    LOGGER.info("PR OPENED Event");
-                    break;
-                }
-                default: {
-                    LOGGER.info("Unhandled GitHub Pull Request Event Action: {}", pullRequest.getAction());
-                }
+    private void handlePullRequestEvent(GHEventPayload.PullRequest ghPullRequest) {
+        switch (ghPullRequest.getAction()) {
+            case "closed": {
+                LOGGER.info("PR CLOSED Event");
+                break;
             }
+            case "opened": {
+                PullRequest pullRequest = createPullRequest(ghPullRequest.getPullRequest());
+                pullRequestService.createPullRequestComment(new PullRequestComment("This PR is managed by **[Argonaut](https://github.com/baloise-incubator/argonaut).** \n\n You can use the command `/ping` as pull request command to test the interaction in a comment. \n\n You can use the command `/deploy` to deploy this branch to it's preview environment (after build is successfull). \nYou can use the command `/promote` to promote this branch to production.", pullRequest));
+                LOGGER.info("PR OPENED Event");
+                break;
+            }
+            default: {
+                LOGGER.info("Unhandled GitHub Pull Request Event Action: {}", ghPullRequest.getAction());
+            }
+        }
     }
 
     private void handlePushEvent(GHEventPayload.Push push) {
         LOGGER.info("REPO PUSH Event");
     }
 
-    private void handleIssueCommentEvent(GHEventPayload.IssueComment issueComment) {
+    private void handleIssueCommentEvent(GHEventPayload.IssueComment issueComment) throws IOException {
         switch (issueComment.getAction()) {
             case "created": {
                 String commentText = issueComment.getComment().getBody();
-                GHRepository repository = issueComment.getRepository();
-                PullRequest pullRequest = new PullRequest(issueComment.getIssue().getNumber(), repository.getOwnerName(), repository.getName());
-                if (commentText.startsWith("/ping")) {
-                    pullRequestCommentService.createPullRequestComment(new PullRequestComment("pong!", pullRequest));
+                GHPullRequest ghPullRequest = issueComment.getRepository().getPullRequest(issueComment.getIssue().getNumber());
+                PullRequest pullRequest = createPullRequest(ghPullRequest);
+                if ("/ping".startsWith(commentText)) {
+                    pullRequestService.createPullRequestComment(new PullRequestComment("pong!", pullRequest));
+                } else if ("/deploy".startsWith(commentText)) {
+                    deployPullRequestService.deploy(pullRequest);
+                } else if ("/promote".startsWith(commentText)) {
+                    deployPullRequestService.promoteToProd(pullRequest);
                 } else {
-                    String deployText = "/deploy ";
-                    if (commentText.startsWith(deployText)) {
-                        String repoUrl = repository.getSvnUrl();
-                        String tag = commentText.substring(commentText.indexOf(deployText) + deployText.length());
-                        deployPullRequestService.deploy(pullRequest, repoUrl + "-deployment-configuration", tag);
-                    }
+                    LOGGER.info("Unhandled comment command: " + commentText);
                 }
                 break;
             }
@@ -114,7 +116,16 @@ public class GitHubWebhookRestController {
         }
     }
 
-    private String getActionElementValue(JsonObject jsonObject) {
-        return jsonObject.get("action").getAsString();
+    public static PullRequest createPullRequest(GHPullRequest pullRequest) {
+        return new PullRequest(
+                pullRequest.getNumber(),
+                pullRequest.getRepository().getSvnUrl(),
+                pullRequest.getRepository().getOwnerName(),
+                pullRequest.getRepository().getName(),
+                pullRequest.getHead().getRef(),
+                pullRequest.getHead().getSha(),
+                pullRequest.getHtmlUrl().toString()
+        );
     }
+
 }

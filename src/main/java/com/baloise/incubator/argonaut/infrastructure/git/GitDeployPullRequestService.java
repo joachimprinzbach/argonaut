@@ -3,12 +3,12 @@ package com.baloise.incubator.argonaut.infrastructure.git;
 import com.baloise.incubator.argonaut.domain.DeployPullRequestService;
 import com.baloise.incubator.argonaut.domain.PullRequest;
 import com.baloise.incubator.argonaut.domain.PullRequestComment;
-import com.baloise.incubator.argonaut.domain.PullRequestCommentService;
+import com.baloise.incubator.argonaut.domain.PullRequestService;
+import com.baloise.incubator.argonaut.infrastructure.github.ConditionalGitHub;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
-import org.kohsuke.github.GitHub;
 import org.simpleyaml.configuration.file.YamlFile;
 import org.simpleyaml.exceptions.InvalidConfigurationException;
 import org.slf4j.Logger;
@@ -23,33 +23,36 @@ import java.io.IOException;
 import java.util.UUID;
 
 @Service
+@ConditionalGitHub
 public class GitDeployPullRequestService implements DeployPullRequestService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GitDeployPullRequestService.class);
 
-    @Value("${argonaut.githubtoken}")
+    @Value("${argonaut.gittoken}")
     private String apiToken;
 
     @Value("${argonaut.tempfolder}")
     private FileSystemResource tempFolder;
 
     @Autowired
-    private PullRequestCommentService pullRequestCommentService;
-
-    @Autowired
-    private GitHub gitHub;
+    private PullRequestService pullRequestService;
 
     @Override
-    public void deploy(PullRequest pullRequest, String deploymentRepoUrl, String newImageTag) {
-        String branchName = "";
-        try {
-            branchName = gitHub.getRepository(pullRequest.getFullName()).getPullRequest(pullRequest.getId()).getHead().getRef();
-        } catch (IOException e) {
-            LOGGER.error("Error getting PR HEAD REF: ", e);
-        }
-        LOGGER.info("Deploying url: {}, pullRequest: {}, newImageTag: {}", deploymentRepoUrl, pullRequest, newImageTag);
-        String sanitizedBranchName = branchName.replace("/", "-");
+    public void deploy(PullRequest pullRequest) {
+        deployBranch(pullRequest, false);
+    }
+
+    @Override
+    public void promoteToProd(PullRequest pullRequest) {
+        deployBranch(pullRequest, true);
+    }
+
+    private void deployBranch(PullRequest pullRequest, boolean isProd) {
+        LOGGER.info("Deploying - isProd: {}, pullRequest: {}", isProd, pullRequest);
+        String sanitizedBranchName = pullRequest.getHeadBranchName().replace("/", "-");
         LOGGER.info("Sanitized branchname: {}", sanitizedBranchName);
+        String newImageTag = sanitizedBranchName + "-" + pullRequest.getHeadCommitSHA();
+        LOGGER.info("New Image Tag: {}", newImageTag);
         File tempRootDirectory = tempFolder.getFile();
         boolean succeeded = tempRootDirectory.mkdir();
         LOGGER.info("temp folder created: {}", succeeded);
@@ -58,16 +61,17 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
         String branchSpecificFolderName = pullRequest.getRepository();
         File masterFolder = new File(uuidWorkingDir, branchSpecificFolderName);
         File branchSpecificFolder = masterFolder;
+        String deployConfigNameSuffix = "-deployment-configuration";
 
         try {
             Git git = Git.cloneRepository()
-                    .setURI(deploymentRepoUrl)
+                    .setURI(pullRequest.getBaseRepoGitUrl() + deployConfigNameSuffix)
                     .setDirectory(uuidWorkingDir)
                     .call();
-            if (!"master".equals(sanitizedBranchName)) {
+            if (!isProd) {
                 branchSpecificFolderName += "-" + sanitizedBranchName;
                 branchSpecificFolder = new File(uuidWorkingDir, branchSpecificFolderName);
-                if (!branchSpecificFolder.exists() || branchSpecificFolderName.isEmpty()) {
+                if (!branchSpecificFolder.exists()) {
                     FileUtils.copyDirectory(masterFolder, branchSpecificFolder);
                     LOGGER.info("PR Deployment {} does not exist, copying directory content from master directory: {}", branchSpecificFolder.getName(), masterFolder.getName());
                 }
@@ -91,26 +95,36 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
                     .add()
                     .addFilepattern(".")
                     .call();
+            String branchName = "deploy/" + pullRequest.getRepository() + pullRequest.getHeadCommitSHA();
+            git
+                    .checkout()
+                    .setCreateBranch(true)
+                    .setName(branchName)
+                    .call();
             git
                     .commit()
                     .setAuthor("ttt-travis-bot", "joachim.prinzbach+github-ttt-travis-bot@gmail.com")
-                    .setMessage("Redeploy")
+                    .setMessage(branchName)
                     .call();
             git
                     .push()
                     .setCredentialsProvider(new UsernamePasswordCredentialsProvider("ttt-travis-bot", apiToken))
                     .call();
-            LOGGER.info("Pushed changes.");
-            pullRequestCommentService.createPullRequestComment(new PullRequestComment("Successfully deployed version " + newImageTag, pullRequest));
+            LOGGER.info("Pushed changes to branch {}", branchName);
+            String deployConfigFullName = pullRequest.getFullName() + deployConfigNameSuffix;
+            PullRequest deployPullRequest = pullRequestService.createPullRequest(deployConfigFullName, branchName);
+            pullRequestService.createPullRequestComment(new PullRequestComment("Successfully deployed version " + newImageTag + ". See the PR here: " + deployPullRequest.getPrWebUrl(), pullRequest));
+            pullRequestService.mergePullRequest(deployConfigFullName, deployPullRequest.getId());
+            pullRequestService.createPullRequestComment(new PullRequestComment("Pull Request merged.", pullRequest));
         } catch (
                 GitAPIException | InvalidConfigurationException | IOException e) {
             e.printStackTrace();
         }
-        // TODO: Activate later
-/*        try {
+        try {
             FileUtils.deleteDirectory(uuidWorkingDir);
         } catch (IOException e) {
             e.printStackTrace();
-        }*/
+        }
     }
+
 }
