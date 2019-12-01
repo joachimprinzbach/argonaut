@@ -3,7 +3,7 @@ package com.baloise.incubator.argonaut.application.github;
 import com.baloise.incubator.argonaut.domain.DeployPullRequestService;
 import com.baloise.incubator.argonaut.domain.PullRequest;
 import com.baloise.incubator.argonaut.domain.PullRequestComment;
-import com.baloise.incubator.argonaut.domain.PullRequestCommentService;
+import com.baloise.incubator.argonaut.domain.PullRequestService;
 import com.baloise.incubator.argonaut.infrastructure.github.ConditionalGitHub;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHPullRequest;
@@ -29,7 +29,7 @@ public class GitHubWebhookRestController {
     private static final String GITHUB_EVENT_HEADER_KEY = "X-GitHub-Event";
 
     @Autowired
-    private PullRequestCommentService pullRequestCommentService;
+    private PullRequestService pullRequestService;
 
     @Autowired
     private DeployPullRequestService deployPullRequestService;
@@ -75,7 +75,7 @@ public class GitHubWebhookRestController {
             }
             case "opened": {
                 PullRequest pullRequest = createPullRequest(ghPullRequest.getNumber(), ghPullRequest.getRepository(), ghPullRequest.getPullRequest());
-                pullRequestCommentService.createPullRequestComment(new PullRequestComment("This PR is managed by **[Argonaut](https://github.com/baloise-incubator/argonaut).** \n\n You can use the command `/ping` as pull request command to test the interaction in a comment. \n\n You can use the command `/deploy` to deploy this branch to it's preview environment (after build is successfull). \nYou can use the command `/promote` to promote this branch to production.", pullRequest));
+                pullRequestService.createPullRequestComment(new PullRequestComment("This PR is managed by **[Argonaut](https://github.com/baloise-incubator/argonaut).** \n\n You can use the command `/ping` as pull request command to test the interaction in a comment. \n\n You can use the command `/deploy` to deploy this branch to it's preview environment (after build is successfull). \nYou can use the command `/promote` to promote this branch to production.", pullRequest));
                 LOGGER.info("PR OPENED Event");
                 break;
             }
@@ -97,7 +97,7 @@ public class GitHubWebhookRestController {
                 GHPullRequest ghPullRequest = repository.getPullRequest(issueComment.getIssue().getNumber());
                 PullRequest pullRequest = createPullRequest(issueComment.getIssue().getNumber(), repository, ghPullRequest);
                 if ("/ping".startsWith(commentText)) {
-                    pullRequestCommentService.createPullRequestComment(new PullRequestComment("pong!", pullRequest));
+                    pullRequestService.createPullRequestComment(new PullRequestComment("pong!", pullRequest));
                 } else if ("/deploy".startsWith(commentText)) {
                     deployPullRequestService.deploy(pullRequest);
                 } else if ("/promote".startsWith(commentText)) {
