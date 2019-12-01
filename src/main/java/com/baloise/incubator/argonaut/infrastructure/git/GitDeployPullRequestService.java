@@ -39,17 +39,17 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
 
     @Override
     public void deploy(PullRequest pullRequest) {
-        deployBranch(pullRequest, pullRequest.getHeadBranchName());
+        deployBranch(pullRequest, false);
     }
 
     @Override
     public void promoteToProd(PullRequest pullRequest) {
-        deployBranch(pullRequest, "master");
+        deployBranch(pullRequest, true);
     }
 
-    private void deployBranch(PullRequest pullRequest, String branchName) {
-        LOGGER.info("Deploying branch: {}, pullRequest: {}", branchName, pullRequest);
-        String sanitizedBranchName = branchName.replace("/", "-");
+    private void deployBranch(PullRequest pullRequest, boolean isProd) {
+        LOGGER.info("Deploying - isProd: {}, pullRequest: {}", isProd, pullRequest);
+        String sanitizedBranchName = pullRequest.getHeadBranchName().replace("/", "-");
         LOGGER.info("Sanitized branchname: {}", sanitizedBranchName);
         String newImageTag = sanitizedBranchName + "-" + pullRequest.getHeadCommitSHA();
         LOGGER.info("New Image Tag: {}", newImageTag);
@@ -67,7 +67,7 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
                     .setURI(pullRequest.getBaseRepoGitUrl() + "-deployment-configuration")
                     .setDirectory(uuidWorkingDir)
                     .call();
-            if (!"master".equals(sanitizedBranchName)) {
+            if (!isProd) {
                 branchSpecificFolderName += "-" + sanitizedBranchName;
                 branchSpecificFolder = new File(uuidWorkingDir, branchSpecificFolderName);
                 if (!branchSpecificFolder.exists()) {
