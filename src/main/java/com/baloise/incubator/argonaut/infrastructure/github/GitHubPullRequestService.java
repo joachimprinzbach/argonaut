@@ -36,7 +36,7 @@ public class GitHubPullRequestService implements PullRequestService {
 
     @Override
     public PullRequest createPullRequest(String repositoryFullName, String headBranchName) {
-        LOGGER.info("Creating pr for Repository {} and branch: ", repositoryFullName, headBranchName);
+        LOGGER.info("Creating pr for Repository {} and branch: {}", repositoryFullName, headBranchName);
         try {
             GHPullRequest createdPr = gitHub.getRepository(repositoryFullName).createPullRequest("title", headBranchName, "master", "body");
             LOGGER.info("Successfully commented on Pull Request");
