@@ -61,10 +61,11 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
         String branchSpecificFolderName = pullRequest.getRepository();
         File masterFolder = new File(uuidWorkingDir, branchSpecificFolderName);
         File branchSpecificFolder = masterFolder;
+        String deployConfigNameSuffix = "-deployment-configuration";
 
         try {
             Git git = Git.cloneRepository()
-                    .setURI(pullRequest.getBaseRepoGitUrl() + "-deployment-configuration")
+                    .setURI(pullRequest.getBaseRepoGitUrl() + deployConfigNameSuffix)
                     .setDirectory(uuidWorkingDir)
                     .call();
             if (!isProd) {
@@ -94,9 +95,10 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
                     .add()
                     .addFilepattern(".")
                     .call();
+            String branchName = "deploy/" + pullRequest.getRepository() + pullRequest.getHeadCommitSHA();
             git
                     .branchCreate()
-                    .setName("deploy/" + pullRequest.getRepository() + pullRequest.getHeadCommitSHA())
+                    .setName(branchName)
                     .call();
             git
                     .commit()
@@ -108,10 +110,11 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
                     .setCredentialsProvider(new UsernamePasswordCredentialsProvider("ttt-travis-bot", apiToken))
                     .call();
             LOGGER.info("Pushed changes.");
-            String prUrl = pullRequestService.createPullRequest(pullRequest);
-            pullRequestService.createPullRequestComment(new PullRequestComment("Successfully deployed version " + newImageTag+". See the PR here: " + prUrl, pullRequest));
-            pullRequestService.mergePullRequest(pullRequest);
-            pullRequestService.createPullRequestComment(new PullRequestComment("Pull Request merged." + prUrl, pullRequest));
+            String deployConfigFullName = pullRequest.getFullName() + deployConfigNameSuffix;
+            PullRequest deployPullRequest = pullRequestService.createPullRequest(deployConfigFullName, branchName);
+            pullRequestService.createPullRequestComment(new PullRequestComment("Successfully deployed version " + newImageTag + ". See the PR here: " + deployPullRequest.getPrWebUrl(), pullRequest));
+            pullRequestService.mergePullRequest(deployConfigFullName, deployPullRequest.getId());
+            pullRequestService.createPullRequestComment(new PullRequestComment("Pull Request merged.", pullRequest));
         } catch (
                 GitAPIException | InvalidConfigurationException | IOException e) {
             e.printStackTrace();
@@ -122,4 +125,5 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
             e.printStackTrace();
         }
     }
+
 }

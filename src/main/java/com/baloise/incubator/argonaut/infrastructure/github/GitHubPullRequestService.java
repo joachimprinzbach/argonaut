@@ -5,6 +5,7 @@ import com.baloise.incubator.argonaut.domain.PullRequest;
 import com.baloise.incubator.argonaut.domain.PullRequestComment;
 import com.baloise.incubator.argonaut.domain.PullRequestService;
 import org.kohsuke.github.GHPullRequest;
+import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,24 +36,25 @@ public class GitHubPullRequestService implements PullRequestService {
     }
 
     @Override
-    public String createPullRequest(PullRequest pullRequest) {
+    public PullRequest createPullRequest(String repositoryFullName, String headBranchName) {
         try {
-            GHPullRequest createdPr = gitHub.getRepository(pullRequest.getFullName()).createPullRequest("title", pullRequest.getHeadBranchName(), "master", "body");
+            GHPullRequest createdPr = gitHub.getRepository(repositoryFullName).createPullRequest("title", headBranchName, "master", "body");
             LOGGER.info("Successfully commented on Pull Request");
-            return createdPr.getHtmlUrl().toString();
+            return GitHubWebhookRestController.createPullRequest(createdPr);
         } catch (IOException e) {
-            LOGGER.error("Error creating Pull Request: {}, Error: {}", pullRequest, e);
+            LOGGER.error("Error creating Pull Request: {}, Error: {}", repositoryFullName, e);
         }
         return null;
     }
 
     @Override
-    public void mergePullRequest(PullRequest pullRequest) {
+    public void mergePullRequest(String repositoryFullName, int prId) {
         try {
-            gitHub.getRepository(pullRequest.getFullName()).getPullRequest(pullRequest.getId()).merge("Merge changes");
+            gitHub.getRepository(repositoryFullName).getPullRequest(prId).merge("Merge changes");
             LOGGER.info("Successfully commented on Pull Request");
         } catch (IOException e) {
-            LOGGER.error("Error merging Pull Request: {}, Error: {}", pullRequest, e);
+            LOGGER.error("Error merging Pull Request: {}, Error: {}", repositoryFullName, e);
         }
     }
+
 }

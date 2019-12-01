@@ -74,7 +74,7 @@ public class GitHubWebhookRestController {
                 break;
             }
             case "opened": {
-                PullRequest pullRequest = createPullRequest(ghPullRequest.getNumber(), ghPullRequest.getRepository(), ghPullRequest.getPullRequest());
+                PullRequest pullRequest = createPullRequest(ghPullRequest.getPullRequest());
                 pullRequestService.createPullRequestComment(new PullRequestComment("This PR is managed by **[Argonaut](https://github.com/baloise-incubator/argonaut).** \n\n You can use the command `/ping` as pull request command to test the interaction in a comment. \n\n You can use the command `/deploy` to deploy this branch to it's preview environment (after build is successfull). \nYou can use the command `/promote` to promote this branch to production.", pullRequest));
                 LOGGER.info("PR OPENED Event");
                 break;
@@ -93,9 +93,8 @@ public class GitHubWebhookRestController {
         switch (issueComment.getAction()) {
             case "created": {
                 String commentText = issueComment.getComment().getBody();
-                GHRepository repository = issueComment.getRepository();
-                GHPullRequest ghPullRequest = repository.getPullRequest(issueComment.getIssue().getNumber());
-                PullRequest pullRequest = createPullRequest(issueComment.getIssue().getNumber(), repository, ghPullRequest);
+                GHPullRequest ghPullRequest = issueComment.getRepository().getPullRequest(issueComment.getIssue().getNumber());
+                PullRequest pullRequest = createPullRequest(ghPullRequest);
                 if ("/ping".startsWith(commentText)) {
                     pullRequestService.createPullRequestComment(new PullRequestComment("pong!", pullRequest));
                 } else if ("/deploy".startsWith(commentText)) {
@@ -117,8 +116,16 @@ public class GitHubWebhookRestController {
         }
     }
 
-    private PullRequest createPullRequest(int id, GHRepository repository, GHPullRequest pullRequest) {
-        return new PullRequest(id, repository.getSvnUrl(), repository.getOwnerName(), repository.getName(), pullRequest.getHead().getRef(), pullRequest.getHead().getSha());
+    public static PullRequest createPullRequest(GHPullRequest pullRequest) {
+        return new PullRequest(
+                pullRequest.getNumber(),
+                pullRequest.getRepository().getSvnUrl(),
+                pullRequest.getRepository().getOwnerName(),
+                pullRequest.getRepository().getName(),
+                pullRequest.getHead().getRef(),
+                pullRequest.getHead().getSha(),
+                pullRequest.getHtmlUrl().toString()
+        );
     }
 
 }

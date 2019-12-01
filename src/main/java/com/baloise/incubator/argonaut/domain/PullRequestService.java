@@ -4,7 +4,7 @@ public interface PullRequestService {
 
     void createPullRequestComment(PullRequestComment pullRequestComment);
 
-    String createPullRequest(PullRequest pullRequest);
+    PullRequest createPullRequest(String repositoryFullName, String headBranchName);
 
-    void mergePullRequest(PullRequest pullRequest);
+    void mergePullRequest(String repositoryFullName, int prId);
 }
