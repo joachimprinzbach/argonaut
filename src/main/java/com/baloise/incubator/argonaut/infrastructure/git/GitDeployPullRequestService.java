@@ -5,6 +5,7 @@ import com.baloise.incubator.argonaut.domain.PullRequest;
 import com.baloise.incubator.argonaut.domain.PullRequestComment;
 import com.baloise.incubator.argonaut.domain.PullRequestService;
 import com.baloise.incubator.argonaut.infrastructure.github.ConditionalGitHub;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -13,7 +14,6 @@ import org.simpleyaml.configuration.file.YamlFile;
 import org.simpleyaml.exceptions.InvalidConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Service;
@@ -24,6 +24,7 @@ import java.util.UUID;
 
 @Service
 @ConditionalGitHub
+@RequiredArgsConstructor
 public class GitDeployPullRequestService implements DeployPullRequestService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GitDeployPullRequestService.class);
@@ -34,20 +35,10 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
     @Value("${argonaut.tempfolder}")
     private FileSystemResource tempFolder;
 
-    @Autowired
-    private PullRequestService pullRequestService;
+    private final PullRequestService pullRequestService;
 
     @Override
-    public void deploy(PullRequest pullRequest) {
-        deployBranch(pullRequest, false);
-    }
-
-    @Override
-    public void promoteToProd(PullRequest pullRequest) {
-        deployBranch(pullRequest, true);
-    }
-
-    private void deployBranch(PullRequest pullRequest, boolean isProd) {
+    public void deploy(PullRequest pullRequest, boolean isProd) {
         LOGGER.info("Deploying - isProd: {}, pullRequest: {}", isProd, pullRequest);
         String sanitizedBranchName = pullRequest.getHeadBranchName().replace("/", "-");
         LOGGER.info("Sanitized branchname: {}", sanitizedBranchName);

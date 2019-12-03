@@ -4,23 +4,23 @@ import com.baloise.incubator.argonaut.application.github.GitHubWebhookRestContro
 import com.baloise.incubator.argonaut.domain.PullRequest;
 import com.baloise.incubator.argonaut.domain.PullRequestComment;
 import com.baloise.incubator.argonaut.domain.PullRequestService;
+import lombok.RequiredArgsConstructor;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GitHub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 
 @Service
 @ConditionalGitHub
+@RequiredArgsConstructor
 public class GitHubPullRequestService implements PullRequestService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GitHubWebhookRestController.class);
 
-    @Autowired
-    private GitHub gitHub;
+    private final GitHub gitHub;
 
     @Override
     public void createPullRequestComment(PullRequestComment pullRequestComment) {
