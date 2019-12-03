@@ -38,7 +38,7 @@ public class GitHubPullRequestService implements PullRequestService {
     public PullRequest createPullRequest(String repositoryFullName, String headBranchName) {
         LOGGER.info("Creating pr for Repository {} and branch: {}", repositoryFullName, headBranchName);
         try {
-            GHPullRequest createdPr = gitHub.getRepository(repositoryFullName).createPullRequest("title", headBranchName, "master", "body");
+            GHPullRequest createdPr = gitHub.getRepository(repositoryFullName).createPullRequest(headBranchName, headBranchName, "master", "Deployment of " + headBranchName);
             LOGGER.info("Successfully commented on Pull Request");
             return GitHubWebhookRestController.createPullRequest(createdPr);
         } catch (IOException e) {
