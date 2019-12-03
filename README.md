@@ -4,7 +4,7 @@
 > "Argonauts" literally means "Argo sailors".
 
 ## Run argonaut
-Provide the following environment variables: 
+You need to provide the following environment variables: 
 
 * `GIT_KIND` - Currentl only "github" is supported
 * `GIT_TOKEN` - the token to access the git server's api and to perform git operations
