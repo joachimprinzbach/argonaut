@@ -41,7 +41,7 @@ public class GitHubPullRequestEventHandler {
             }
             case OPENED: {
                 PullRequest pullRequest = createPullRequest(ghPullRequest.getPullRequest());
-                pullRequestService.createPullRequestComment(new PullRequestComment("This PR is managed by **[Argonaut](https://github.com/baloise-incubator/argonaut).** \n\n You can use the command `/ping` as pull request command to test the interaction in a comment. \n\n You can use the command `/deploy` to deploy this branch to it's preview environment (after build is successfull). \nYou can use the command `/promote` to promote this branch to production.", pullRequest));
+                pullRequestService.createPullRequestComment(new PullRequestComment("This PR is managed by **[Argonaut](https://github.com/baloise-incubator/argonaut).** \n\n You can use the command `/ping` as pull request comment to test the interaction. \n\n You can use the command `/deploy` to deploy this branch to it's preview environment (after build is successful). \nYou can use the command `/promote` to promote this branch to production.", pullRequest));
                 break;
             }
             default: {

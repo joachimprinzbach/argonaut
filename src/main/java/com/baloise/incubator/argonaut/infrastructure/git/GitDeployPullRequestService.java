@@ -104,9 +104,9 @@ public class GitDeployPullRequestService implements DeployPullRequestService {
             LOGGER.info("Pushed changes to branch {}", branchName);
             String deployConfigFullName = pullRequest.getFullName() + deployConfigNameSuffix;
             PullRequest deployPullRequest = pullRequestService.createPullRequest(deployConfigFullName, branchName);
-            pullRequestService.createPullRequestComment(new PullRequestComment("Successfully deployed version " + newImageTag + ". See the PR here: " + deployPullRequest.getPrWebUrl(), pullRequest));
+            pullRequestService.createPullRequestComment(new PullRequestComment("Successfully created a Pull Request to deploy the new version: " + newImageTag + ". See the PR here: " + deployPullRequest.getPrWebUrl(), pullRequest));
             pullRequestService.mergePullRequest(deployConfigFullName, deployPullRequest.getId());
-            pullRequestService.createPullRequestComment(new PullRequestComment("Pull Request merged.", pullRequest));
+            pullRequestService.createPullRequestComment(new PullRequestComment("Deployment Repository Pull Request merged, Deployment finished in a couple of seconds.", pullRequest));
         } catch (
                 GitAPIException | InvalidConfigurationException | IOException e) {
             e.printStackTrace();
