@@ -1,0 +1,10 @@
+# the name of the repository, without the project slug
+teamconfigrepositoryname: argonaut-deployment-configuration
+
+# the application namespace, without the env postfix
+appnamespace: argonaut
+
+# a dict of paths where the value sould be replaced by the image tag
+imagepaths:
+  backend: backend.image.tag
+
