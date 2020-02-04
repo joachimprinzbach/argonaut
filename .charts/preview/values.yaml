@@ -1,0 +1,6 @@
+preview:
+  backend:
+    image:
+      tag: overrideme
+  route:
+    host: overrideme

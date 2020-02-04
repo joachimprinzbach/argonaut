@@ -1,0 +1,3 @@
+- alias: preview
+  name: argonaut
+  repository: file://../argonaut
